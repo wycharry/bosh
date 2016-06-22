@@ -358,6 +358,25 @@ LOGMESSAGE
                 end
               end
           end
+
+          describe 'when addons is defined in deployment manifest' do
+            describe 'when addons are defined in the runtime config' do
+              it "should add addons in the deployment manifest in addition to addons in runtime config"
+              it "raise an error if the addon names conflict in the runtime config and deployment manifest"
+              it "raise an error if addon name already exists in the runtime config"
+            end
+
+            describe 'when addons are not defined in the runtime config' do
+              let(:manifest_hash) { Bosh::Spec::Deployments.simple_manifest_with_addons }
+
+              it "should add the addons in deployment manifest to each instance group" do
+                templates = planner.instance_groups[0].templates
+                expect(templates.length).to eq(2)
+                expect(templates[0].name).to eq('foobar')
+                expect(templates[1].name).to eq('foobar2')
+              end
+            end
+          end
         end
 
         def configure_config
@@ -376,6 +395,13 @@ LOGMESSAGE
             release_version = Models::ReleaseVersion.make(release: release, version: release_entry['version'])
             release_version.add_template(template)
             release_version.add_template(template2)
+
+            if manifest_hash['addons']
+              addon = manifest_hash['addons'].first
+              template3 = Models::Template.make(name: addon['jobs'].first['name'], release: release)
+
+              release_version.add_template(template3)
+            end
           end
 
           runtime_config_hash['releases'].each do |release_entry|

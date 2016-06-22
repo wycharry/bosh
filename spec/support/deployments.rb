@@ -426,6 +426,17 @@ module Bosh::Spec
       })
     end
 
+    def self.simple_manifest_with_addons
+      test_release_manifest.merge({
+        'jobs' => [simple_job]
+      }).merge({
+        'addons' => [
+          {
+            "name" => 'addon1',
+            "jobs" => [{"name" => "errand1", "release" => "bosh-release"}]
+          }]})
+    end
+
     def self.remote_release_manifest(remote_release_url, sha1, version='latest')
       minimal_manifest.merge({
           'jobs' => [

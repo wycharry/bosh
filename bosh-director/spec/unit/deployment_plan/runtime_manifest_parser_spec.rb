@@ -150,6 +150,8 @@ module Bosh::Director
           expect(deployment.job('dummy').templates.any? {|t| t.name == 'dummy_with_properties'}).to eq(true)
           expect(deployment.job('dummy').all_properties['dummy_with_properties']['echo_value']).to eq('prop_value')
         end
+
+
       end
     end
   end
