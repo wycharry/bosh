@@ -329,6 +329,33 @@ module Bosh::Director
         end
       end
 
+      post '/dry-run', authorization: :create_deployment, :consumes => :yaml do
+        manifest_file_path = prepare_yml_file(request.body, 'deployment')
+        deployment = validate_manifest_yml(File.read(manifest_file_path), manifest_file_path)
+
+        if params['context']
+          @logger.debug("Deploying with context #{params['context']}")
+          context = JSON.parse(params['context'])
+          cloud_config = Api::CloudConfigManager.new.find_by_id(context['cloud_config_id'])
+          runtime_config = Api::RuntimeConfigManager.new.find_by_id(context['runtime_config_id'])
+        else
+          cloud_config = Api::CloudConfigManager.new.latest
+          runtime_config = Api::RuntimeConfigManager.new.latest
+        end
+
+        if deployment
+          deployment_name = deployment['name']
+          if deployment_name
+            options['new'] = Models::Deployment[name: deployment_name].nil? ? true : false
+            deployment_model = @deployments_repo.find_or_create_by_name(deployment_name, options)
+          end
+        end
+
+        task = @deployment_manager.dry_run(current_user, manifest_file_path, cloud_config, runtime_config, deployment_model)
+
+        redirect "/tasks/1"
+      end
+
       post '/', authorization: :create_deployment, :consumes => :yaml do
         manifest_file_path = prepare_yml_file(request.body, 'deployment')
         deployment = validate_manifest_yml(File.read(manifest_file_path), manifest_file_path)

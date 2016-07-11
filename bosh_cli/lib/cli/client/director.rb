@@ -280,10 +280,12 @@ module Bosh
           recreate               = options.delete(:recreate)
           skip_drain             = options.delete(:skip_drain)
           context                = options.delete(:context)
+          dry_run                = options.delete(:dry_run)
           options[:content_type] = 'text/yaml'
           options[:payload]      = manifest_yaml
 
           url = '/deployments'
+          url += '/dry-run' if dry_run
 
           extras = []
           extras << ['recreate', 'true'] if recreate
