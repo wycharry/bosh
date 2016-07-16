@@ -97,9 +97,8 @@ module Bosh::Director
 
         it 'should delete the instances with the config max threads option' do
           allow(Config).to receive(:max_threads).and_return(5)
-          pool = double('pool')
+          pool = ThreadPool.new
           expect(ThreadPool).to receive(:new).with(max_threads: 5).and_return(pool)
-          expect(pool).to receive(:wrap).and_yield(pool)
           expect(pool).to receive(:process).exactly(5).times.and_yield
 
           5.times do |index|
