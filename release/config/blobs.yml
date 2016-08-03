@@ -91,3 +91,7 @@ s3cli/s3cli-0.0.44-linux-amd64:
   object_id: 117ebadd-218e-4988-8bf5-3c5f956d305c
   sha: 885a8d95354978f1f6126aef6b161515efaac221
   size: 12289048
+davcli/davcli-0.0.5-linux-amd64:
+  object_id: 34e6ceeb-002a-4ba1-b77b-31a615cd17d1
+  sha: 15e757168613588b323e6ee5d37dbf9d0d1d43d1
+  size: 8694760
