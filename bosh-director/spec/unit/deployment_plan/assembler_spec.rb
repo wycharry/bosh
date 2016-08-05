@@ -71,7 +71,7 @@ module Bosh::Director
           job = DeploymentPlan::InstanceGroup.new(logger)
           template_model = Models::Template.make(name: template_name)
           release_version = instance_double(DeploymentPlan::ReleaseVersion)
-          allow(release_version).to receive(:get_template_model_by_name).and_return(template_model)
+          allow(release_version).to receive(:get_job_model_by_name).and_return(template_model)
           template = DeploymentPlan::Template.new(release_version, template_name)
           template.bind_models
           job.templates = [template]

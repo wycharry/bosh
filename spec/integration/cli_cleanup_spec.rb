@@ -32,7 +32,7 @@ describe 'cli: cleanup', type: :integration do
     it 'should remove releases and stemcells, leaving recent versions. Also leaves orphaned disks.' do
       manifest_hash = Bosh::Spec::Deployments.simple_manifest
       manifest_hash['name'] = 'deployment-a'
-      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_job(persistent_disk_pool: 'disk_a', instances: 1, name: 'first-job')]
+      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_instance_group(persistent_disk_pool: 'disk_a', instances: 1, name: 'first-job')]
       cloud_config = Bosh::Spec::Deployments.simple_cloud_config
       disk_pool = Bosh::Spec::Deployments.disk_pool
       disk_pool['cloud_properties'] = {'my' => 'property'}
@@ -68,7 +68,7 @@ describe 'cli: cleanup', type: :integration do
     it 'should remove orphaned disks, releases and stemcells' do
       manifest_hash = Bosh::Spec::Deployments.simple_manifest
       manifest_hash['name'] = 'deployment-a'
-      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_job(persistent_disk_pool: 'disk_a', instances: 1, name: 'first-job')]
+      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_instance_group(persistent_disk_pool: 'disk_a', instances: 1, name: 'first-job')]
       cloud_config = Bosh::Spec::Deployments.simple_cloud_config
       disk_pool = Bosh::Spec::Deployments.disk_pool
       disk_pool['cloud_properties'] = {'my' => 'property'}

@@ -216,7 +216,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
           create_and_upload_test_release
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_templates_having_prestart_scripts',
                 templates: [
                   {'name' => 'job_1_with_pre_start_script'},
@@ -255,7 +255,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
               'version' => '1',
             }],
             'jobs' => [
-              Bosh::Spec::Deployments.job_with_many_templates(
+              Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_templates_having_prestart_scripts',
                 templates: [
                   {'name' => 'job_1_with_pre_start_script'}
@@ -298,7 +298,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
                 'version' => '1',
               }],
               'jobs' => [
-                Bosh::Spec::Deployments.job_with_many_templates(
+                Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'job_with_templates_having_prestart_scripts',
                   templates: [
                     {'name' => 'job_with_valid_pre_start_script'},
@@ -346,14 +346,14 @@ Error 100: Unable to render instance groups for deployment. Errors are:
           create_and_upload_test_release
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_post_deploy_script',
                 templates: [
                   {'name' => 'job_1_with_post_deploy_script'},
                   {'name' => 'job_2_with_post_deploy_script'}
                 ],
                 instances: 1),
-                Bosh::Spec::Deployments.job_with_many_templates(
+                Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'another_job_with_post_deploy_script',
                   templates: [
                     {'name' => 'job_1_with_post_deploy_script'},
@@ -432,7 +432,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
           create_and_upload_test_release
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_post_deploy_script',
                 templates: [
                   {'name' => 'job_1_with_post_deploy_script'},
@@ -471,14 +471,14 @@ Error 100: Unable to render instance groups for deployment. Errors are:
           create_and_upload_test_release
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_post_deploy_script',
                 templates: [
                   {'name' => 'job_1_with_post_deploy_script'},
                   {'name' => 'job_2_with_post_deploy_script'}
                 ],
                 instances: 1),
-                Bosh::Spec::Deployments.job_with_many_templates(
+                Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'job_with_errand',
                   templates: [
                     {'name' => 'errand1'}
@@ -532,14 +532,14 @@ Error 100: Unable to render instance groups for deployment. Errors are:
         create_and_upload_test_release
         manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
           {
-            'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+            'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
               name: 'job_with_post_deploy_script',
               templates: [
                 {'name' => 'job_1_with_post_deploy_script'},
                 {'name' => 'job_2_with_post_deploy_script'}
               ],
               instances: 1),
-              Bosh::Spec::Deployments.job_with_many_templates(
+              Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'another_job_with_post_deploy_script',
                 templates: [
                   {'name' => 'job_1_with_post_deploy_script'},
@@ -573,7 +573,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
         create_and_upload_test_release
         manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
           {
-            'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+            'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
               name: 'job_with_templates_having_properties',
               templates: [
                 {'name' => 'job_1_with_many_properties',
@@ -620,7 +620,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
 
         manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
           {
-            'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+            'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
               name: 'job_with_templates_having_properties',
               templates: [
                 {'name' => 'job_1_with_many_properties',
@@ -663,7 +663,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
         before do
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_templates_having_properties',
                 templates: [
                   {'name' => 'job_1_with_many_properties',
@@ -706,7 +706,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
         before do
           manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
             {
-              'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+              'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                 name: 'job_with_templates_having_properties',
                 templates: [
                   {'name' => 'job_1_with_many_properties',
@@ -764,7 +764,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
           Bosh::Spec::Deployments.test_release_manifest.merge(
             {
               'jobs' => [
-                Bosh::Spec::Deployments.job_with_many_templates(
+                Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'worker_1',
                   templates: [
                     {'name' => 'job_1_with_many_properties',
@@ -790,7 +790,7 @@ Error 100: Unable to render instance groups for deployment. Errors are:
                   ],
                   instances: 1
                 ),
-                Bosh::Spec::Deployments.job_with_many_templates(
+                Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'worker_2',
                   templates: [
                     {'name' => 'job_1_with_many_properties',
@@ -977,7 +977,7 @@ Deployed 'simple' to 'Test Director'
           context 'and they contain identical packages' do
             before {
               bosh_runner.run("upload release #{spec_asset('compiled_releases/test_release/releases/test_release/test_release-4-same-packages-as-1.tgz')}")
-              deployment_manifest = Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5')
+              deployment_manifest = Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5')
               deployment_manifest['releases'][0]['version'] = '4'
               set_deployment({manifest_hash: deployment_manifest })
             }
@@ -992,7 +992,7 @@ Deployed 'simple' to 'Test Director'
           context 'and they contain one different package' do
             before {
               bosh_runner.run("upload release #{spec_asset('compiled_releases/test_release/releases/test_release/test_release-3-pkg1-updated.tgz')}")
-              deployment_manifest = Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5')
+              deployment_manifest = Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5')
               deployment_manifest['releases'][0]['version'] = '3'
               set_deployment({manifest_hash: deployment_manifest })
             }
@@ -1013,7 +1013,7 @@ Deployed 'simple' to 'Test Director'
               # switch deployment to use "ubuntu-stemcell/1"
               bosh_runner.run("upload stemcell #{spec_asset('valid_stemcell.tgz')}")
               upload_cloud_config
-              set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5') })
+              set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5') })
             }
 
             it 'fails with an error message saying there is no way to compile for that stemcell' do
@@ -1148,17 +1148,17 @@ Deployed 'simple' to 'Test Director'
       let(:manifest) {
         Bosh::Spec::Deployments.test_release_manifest.merge({
           'jobs' => [
-            Bosh::Spec::Deployments.job_with_many_templates(
+            Bosh::Spec::Deployments.instance_group_with_many_templates(
               name: 'job_with_post_deploy_script',
               templates: [
                 {'name' => 'job_1_with_post_deploy_script'},
                 {'name' => 'job_2_with_post_deploy_script'}
               ],
               instances: 1),
-            Bosh::Spec::Deployments.simple_errand_job.merge({
+            Bosh::Spec::Deployments.simple_errand_instance_group.merge({
               'name' => 'alive-errand',
             }),
-            Bosh::Spec::Deployments.simple_errand_job.merge({
+            Bosh::Spec::Deployments.simple_errand_instance_group.merge({
               'name' => 'dead-errand',
             }),
           ]

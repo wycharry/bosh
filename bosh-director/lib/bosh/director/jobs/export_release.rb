@@ -128,7 +128,7 @@ module Bosh::Director
         instance_group.all_properties = planner.properties
         instance_group.all_uninterpolated_properties = planner.properties
         release_version_model.templates.map do |template|
-          instance_group.templates << release.get_or_create_template(template.name)
+          instance_group.templates << release.get_or_create_job(template.name)
         end
 
         instance_group

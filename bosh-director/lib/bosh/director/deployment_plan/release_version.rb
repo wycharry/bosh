@@ -20,7 +20,7 @@ module Bosh::Director
         @version = safe_property(spec, 'version', :class => String)
 
         @model = nil
-        @templates = {}
+        @jobs = {}
 
         @logger = Config.logger
         @manager = Api::ReleaseManager.new
@@ -55,9 +55,9 @@ module Bosh::Director
         end
 
         # By now job specs from the deployment manifest should
-        # have been parsed, so we can assume @templates contains
+        # have been parsed, so we can assume @jobs contains
         # the list of templates that need to be bound
-        @templates.each_value do |template|
+        @jobs.each_value do |template|
           @logger.debug("Binding template '#{template.name}'")
           template.bind_models
           @logger.debug("Bound template '#{template.name}'")
@@ -75,13 +75,13 @@ module Bosh::Director
       # Looks up up template model by template name
       # @param [String] name Template name
       # @return [Models::Template]
-      def get_template_model_by_name(name)
-        @all_templates ||= @model.templates.inject({}) do |hash, template|
-          hash[template.name] = template
+      def get_job_model_by_name(name)
+        @all_jobs ||= @model.templates.inject({}) do |hash, job|
+          hash[job.name] = job
           hash
         end
 
-        @all_templates[name]
+        @all_jobs[name]
       end
 
       # Looks up up package model by package name
@@ -94,15 +94,15 @@ module Bosh::Director
       # Adds template to a list of templates used by this release for the
       # current deployment
       # @param [String] options Template name
-      def get_or_create_template(name)
-        @templates[name] ||= Template.new(self, name)
+      def get_or_create_job(name)
+        @jobs[name] ||= Template.new(self, name)
       end
 
       # @param [String] name Template name
       # @return [DeploymentPlan::Template] Template with given name used by this
       #   release (if any)
       def template(name)
-        @templates[name]
+        @jobs[name]
       end
 
       # Returns a list of job templates that need to be included into this
@@ -111,7 +111,7 @@ module Bosh::Director
       # into current deployment plan.
       # @return [Array<DeploymentPlan::Template>] List of job templates
       def templates
-        @templates.values
+        @jobs.values
       end
     end
   end

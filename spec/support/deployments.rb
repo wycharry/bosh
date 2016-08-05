@@ -260,7 +260,7 @@ module Bosh::Spec
       }
     end
 
-    def self.dummy_job
+    def self.dummy_instance_group
       {
         'name' => 'dummy',
         'templates' => [{'name'=> 'dummy', 'release' => 'dummy'}],
@@ -287,37 +287,7 @@ module Bosh::Spec
             'update_watch_time' => 20
         },
 
-        'jobs' => [self.dummy_job]
-      }
-    end
-
-    def self.manifest_with_jobs
-      {
-        'name' => 'minimal',
-        'director_uuid' => 'deadbeef',
-
-        'releases' => [{
-            'name' => 'appcloud',
-            'version' => '0.1' # It's our dummy valid release from spec/assets/valid_release.tgz
-          }],
-
-        'update' => {
-          'canaries' => 2,
-          'canary_watch_time' => 4000,
-          'max_in_flight' => 1,
-          'update_watch_time' => 20
-        },
-
-        'jobs' => [{
-            'name' => 'cacher',
-            'templates' => [{
-                'name' => 'cacher',
-                'release' => 'appcloud'
-              }],
-            'resource_pool' => 'a',
-            'instances' => 3,
-            'networks' => [{'name' => 'a'}],
-          }]
+        'jobs' => [self.dummy_instance_group]
       }
     end
 
@@ -340,13 +310,13 @@ module Bosh::Spec
       }
     end
 
-    def self.test_deployment_manifest_with_job(job_name)
+    def self.test_deployment_manifest_with_instance_group(instance_group_name)
       test_deployment_manifest.merge(
         {
           'jobs' => [{
-              'name'          => job_name,
+              'name'          => instance_group_name,
               'templates'     => [{
-                                      'name'    => job_name
+                                      'name'    => instance_group_name
                                   }],
               'resource_pool' => 'a',
               'instances'     => 1,
@@ -450,12 +420,12 @@ module Bosh::Spec
 
     def self.simple_manifest
       test_release_manifest.merge({
-        'jobs' => [simple_job]
+        'jobs' => [simple_instance_group]
       })
     end
 
     def self.remote_release_manifest(remote_release_url, sha1, version='latest')
-      minimal_manifest.merge(test_release_job).merge({
+      minimal_manifest.merge(test_release_instance_group).merge({
           'releases' => [{
               'name'    => 'test_release',
               'version' => version,
@@ -466,7 +436,7 @@ module Bosh::Spec
     end
 
     def self.local_release_manifest(local_release_path, version = 'latest')
-      minimal_manifest.merge(test_release_job).merge({
+      minimal_manifest.merge(test_release_instance_group).merge({
           'releases' => [{
               'name'    => 'test_release',
               'version' => version,
@@ -475,7 +445,7 @@ module Bosh::Spec
         })
     end
 
-    def self.test_release_job
+    def self.test_release_instance_group
       {
           'jobs' => [{
                          'name' => 'job',
@@ -487,8 +457,8 @@ module Bosh::Spec
       }
     end
 
-    def self.simple_job(opts = {})
-      job_hash = {
+    def self.simple_instance_group(opts = {})
+      instance_group_hash = {
         'name' => opts.fetch(:name, 'foobar'),
         'templates' => opts[:templates] || opts[:jobs] || ['name' => 'foobar'],
         'resource_pool' => 'a',
@@ -498,27 +468,27 @@ module Bosh::Spec
       }
 
       if opts.has_key?(:static_ips)
-        job_hash['networks'].first['static_ips'] = opts[:static_ips]
+        instance_group_hash['networks'].first['static_ips'] = opts[:static_ips]
       end
 
       if opts[:persistent_disk_pool]
-        job_hash['persistent_disk_pool'] = opts[:persistent_disk_pool]
+        instance_group_hash['persistent_disk_pool'] = opts[:persistent_disk_pool]
       end
 
       if opts.has_key?(:azs)
-        job_hash['azs'] = opts[:azs]
+        instance_group_hash['azs'] = opts[:azs]
       end
 
       if opts.has_key?(:properties)
-        job_hash['properties'] = opts[:properties]
+        instance_group_hash['properties'] = opts[:properties]
       end
 
-      job_hash
+      instance_group_hash
     end
-    # Aliasing class method simple_job to simple_instance_group
-    singleton_class.send(:alias_method, :simple_instance_group, :simple_job)
+    # Aliasing class method simple_instance_group to simple_instance_group
+    singleton_class.send(:alias_method, :simple_instance_group, :simple_instance_group)
 
-    def self.job_with_many_templates(options={})
+    def self.instance_group_with_many_templates(options={})
       {
           'name'          => options.fetch(:name),
           'templates'      => options.fetch(:templates),
@@ -531,12 +501,12 @@ module Bosh::Spec
 
     def self.manifest_with_errand
       manifest = simple_manifest.merge('name' => 'errand')
-      manifest['jobs'].find { |job| job['name'] == 'foobar'}['instances'] = 1
-      manifest['jobs'] << simple_errand_job
+      manifest['jobs'].find { |instance_group| instance_group['name'] == 'foobar'}['instances'] = 1
+      manifest['jobs'] << simple_errand_instance_group
       manifest
     end
 
-    def self.simple_errand_job
+    def self.simple_errand_instance_group
       {
         'name' => 'fake-errand-name',
         'templates' => [

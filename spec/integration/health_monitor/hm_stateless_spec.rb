@@ -18,7 +18,7 @@ describe 'health_monitor: 1', type: :integration, hm: true do
 
   it 'runs the pre-start scripts when the VM is resurrected' do
     manifest_hash = Bosh::Spec::Deployments.test_release_manifest.merge({
-                        'jobs' => [Bosh::Spec::Deployments.job_with_many_templates(
+                        'jobs' => [Bosh::Spec::Deployments.instance_group_with_many_templates(
                                        name: 'job_with_templates_having_prestart_scripts',
                                        templates: [
                                            {'name' => 'job_1_with_pre_start_script'},

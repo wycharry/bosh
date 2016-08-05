@@ -168,7 +168,7 @@ describe 'CPI calls', type: :integration do
       it 'recreates VM with correct CPI requests' do
         manifest_hash = Bosh::Spec::NetworkingManifest.deployment_manifest
         manifest_hash['jobs'] = [
-          Bosh::Spec::Deployments.simple_job(
+          Bosh::Spec::Deployments.simple_instance_group(
             name: 'first-job',
             static_ips: ['192.168.1.10'],
             instances: 1,

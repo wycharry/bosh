@@ -69,7 +69,7 @@ describe 'attach disk', type: :integration do
   context 'deployment has disk that exists in an orphaned list not attached to an instance' do
     before do
       manifest_hash = Bosh::Spec::Deployments.simple_manifest
-      deployment_job = Bosh::Spec::Deployments.simple_job(persistent_disk_pool: 'disk_a', instances: 1)
+      deployment_job = Bosh::Spec::Deployments.simple_instance_group(persistent_disk_pool: 'disk_a', instances: 1)
       manifest_hash['jobs'] = [deployment_job]
       cloud_config = Bosh::Spec::Deployments.simple_cloud_config
       cloud_config['disk_pools'] = [Bosh::Spec::Deployments.disk_pool]

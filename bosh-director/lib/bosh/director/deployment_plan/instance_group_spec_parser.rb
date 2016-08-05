@@ -115,7 +115,7 @@ module Bosh::Director
           end
 
           Array(template_names).each do |template_name|
-            @instance_group.templates << @instance_group.release.get_or_create_template(template_name)
+            @instance_group.templates << @instance_group.release.get_or_create_job(template_name)
           end
         end
       end
@@ -161,7 +161,7 @@ module Bosh::Director
             templates_models_list = release_versions_templates_models_hash[release_name]
             current_template_model = templates_models_list.find {|target| target.name == template_name }
 
-            template = release.get_or_create_template(template_name)
+            template = release.get_or_create_job(template_name)
 
             if current_template_model == nil
               raise "Job '#{template_name}' not found in Template table"

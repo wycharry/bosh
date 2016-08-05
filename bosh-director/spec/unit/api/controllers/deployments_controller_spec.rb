@@ -661,7 +661,7 @@ module Bosh::Director
             end
 
             context 'is "service"' do
-              let(:manifest) { YAML.dump(default_manifest.merge(Bosh::Spec::Deployments.test_release_job)) }
+              let(:manifest) { YAML.dump(default_manifest.merge(Bosh::Spec::Deployments.test_release_instance_group)) }
               context 'and state is either "started" or "stopped"' do
 
                 it 'sets "expects_vm" to "true"' do
@@ -707,7 +707,7 @@ module Bosh::Director
 
             context 'is "errand"' do
               let(:manifest) {
-                manifest = default_manifest.merge(Bosh::Spec::Deployments.test_release_job)
+                manifest = default_manifest.merge(Bosh::Spec::Deployments.test_release_instance_group)
                 manifest['jobs'][0]['lifecycle'] = 'errand'
                 YAML.dump(manifest)
               }

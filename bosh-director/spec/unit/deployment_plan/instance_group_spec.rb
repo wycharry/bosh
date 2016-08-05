@@ -57,8 +57,8 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
     allow(plan).to receive(:stemcell).with('dea').and_return stemcell
     allow(plan).to receive(:update)
 
-    allow(release).to receive(:get_or_create_template).with('foo').and_return(foo_template)
-    allow(release).to receive(:get_or_create_template).with('bar').and_return(bar_template)
+    allow(release).to receive(:get_or_create_job).with('foo').and_return(foo_template)
+    allow(release).to receive(:get_or_create_job).with('bar').and_return(bar_template)
 
     allow(foo_template).to receive(:template_scoped_properties)
     allow(bar_template).to receive(:template_scoped_properties)
@@ -360,7 +360,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       before { allow(plan).to receive(:release).with('bar_release').and_return(bar_release) }
       let(:bar_release) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'bar_release', version: '1') }
 
-      before { allow(bar_release).to receive(:get_or_create_template).with('bar').and_return(bar_template) }
+      before { allow(bar_release).to receive(:get_or_create_job).with('bar').and_return(bar_template) }
       let(:bar_template) do
         instance_double('Bosh::Director::DeploymentPlan::Template', {
           name: 'bar',

@@ -260,7 +260,7 @@ module ManifestHelper
       }.merge(overrides)
     end
 
-    def default_manifest_with_jobs(overrides = {})
+    def default_manifest_with_instance_groups(overrides = {})
       {
         'name' => 'deployment-name',
         'releases' => [release],

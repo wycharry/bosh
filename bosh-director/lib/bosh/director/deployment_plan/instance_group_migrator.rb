@@ -1,7 +1,7 @@
 module Bosh::Director
   class DeploymentPlan::MigratedFromJob < Struct.new(:name, :availability_zone); end
 
-  class DeploymentPlan::JobMigrator
+  class DeploymentPlan::InstanceGroupMigrator
     def initialize(deployment_plan, logger)
       @deployment_plan = deployment_plan
       @logger = logger

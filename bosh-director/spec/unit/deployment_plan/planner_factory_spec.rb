@@ -183,7 +183,7 @@ LOGMESSAGE
               let(:interpolated_manifest_hash) do
                 Bosh::Spec::Deployments.simple_manifest.merge(
                   'jobs' => [
-                    Bosh::Spec::Deployments.simple_job().merge('azs' => ['zone1', 'zone2'])
+                    Bosh::Spec::Deployments.simple_instance_group().merge('azs' => ['zone1', 'zone2'])
                   ]
                 )
               end
@@ -200,8 +200,8 @@ LOGMESSAGE
                 let(:interpolated_manifest_hash) do
                   Bosh::Spec::Deployments.simple_manifest.merge(
                     'jobs' => [
-                      Bosh::Spec::Deployments.simple_job().merge('azs' => ['zone1']),
-                      Bosh::Spec::Deployments.simple_job(name:'bar').merge('azs' => ['zone2'])
+                      Bosh::Spec::Deployments.simple_instance_group().merge('azs' => ['zone1']),
+                      Bosh::Spec::Deployments.simple_instance_group(name:'bar').merge('azs' => ['zone2'])
                     ]
                   )
                 end

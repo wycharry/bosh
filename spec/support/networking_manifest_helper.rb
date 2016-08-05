@@ -8,7 +8,7 @@ module Bosh::Spec
       job_opts[:templates] = [{'name' => opts[:template]}] if opts[:template]
       job_opts[:instances] = opts[:instances] if opts[:instances]
       job_opts[:static_ips] =opts[:static_ips] if opts[:static_ips]
-      manifest['jobs'] = [Bosh::Spec::Deployments.simple_job(job_opts)]
+      manifest['jobs'] = [Bosh::Spec::Deployments.simple_instance_group(job_opts)]
 
       manifest
     end
@@ -52,7 +52,7 @@ module Bosh::Spec
     def self.errand_manifest(opts)
       manifest = Bosh::Spec::NetworkingManifest.deployment_manifest(name: opts.fetch(:name, 'errand'))
       manifest['jobs'] = [
-        Bosh::Spec::Deployments.simple_errand_job.merge(
+        Bosh::Spec::Deployments.simple_errand_instance_group.merge(
           'instances' => opts.fetch(:instances),
           'name' => 'errand_job'
         )

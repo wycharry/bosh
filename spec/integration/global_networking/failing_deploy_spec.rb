@@ -85,7 +85,7 @@ describe 'failing deploy', type: :integration do
 
     current_sandbox.cpi.commands.allow_create_vm_to_succeed
 
-    manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_job(name: 'second-job', instances: 1)]
+    manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_instance_group(name: 'second-job', instances: 1)]
     deploy_simple_manifest(manifest_hash: manifest_hash)
     # IPs are not released within single deployment
     # see https://www.pivotaltracker.com/story/show/98057020

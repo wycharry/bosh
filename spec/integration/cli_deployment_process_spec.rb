@@ -70,7 +70,7 @@ describe 'cli: deployment process', type: :integration do
           old_manifest = Bosh::Spec::Deployments.simple_manifest
           old_manifest['releases'].first['version'] = '0+dev.1' # latest is converted to release version in new format
 
-          old_job_spec = Bosh::Spec::Deployments.simple_job(
+          old_job_spec = Bosh::Spec::Deployments.simple_instance_group(
               name: 'job1',
               templates: [{'name' => 'foobar_without_packages'}]
           )
@@ -88,7 +88,7 @@ describe 'cli: deployment process', type: :integration do
         let(:new_manifest) do
           new_manifest = Bosh::Spec::Deployments.simple_manifest
 
-          new_job_spec = Bosh::Spec::Deployments.simple_job(
+          new_job_spec = Bosh::Spec::Deployments.simple_instance_group(
               name: 'job1',
               templates: [{'name' => 'foobar_without_packages'}]
           )

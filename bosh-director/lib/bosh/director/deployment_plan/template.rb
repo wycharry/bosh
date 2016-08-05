@@ -39,7 +39,7 @@ module Bosh::Director
       # Looks up template model and its package models in DB
       # @return [void]
       def bind_models
-        @model = @release.get_template_model_by_name(@name)
+        @model = @release.get_job_model_by_name(@name)
 
         if @model.nil?
           raise DeploymentUnknownTemplate, "Can't find job '#{@name}'"

@@ -7,15 +7,15 @@ module Bosh
           @logger = logger
         end
 
-        def plan_job_instances(job, desired_instances, existing_instance_models)
+        def plan_instances(instance_group, desired_instances, existing_instance_models)
           if existing_instance_models.count(&:ignore) > 0
-            fail_if_specifically_changing_state_of_ignored_vms(job, existing_instance_models)
+            fail_if_specifically_changing_state_of_ignored_vms(instance_group, existing_instance_models)
           end
 
           network_planner = NetworkPlanner::Planner.new(@logger)
           placement_plan = PlacementPlanner::Plan.new(@instance_plan_factory, network_planner, @logger)
-          vip_networks, non_vip_networks = job.networks.to_a.partition(&:vip?)
-          instance_plans = placement_plan.create_instance_plans(desired_instances, existing_instance_models, non_vip_networks, job.availability_zones, job.name)
+          vip_networks, non_vip_networks = instance_group.networks.to_a.partition(&:vip?)
+          instance_plans = placement_plan.create_instance_plans(desired_instances, existing_instance_models, non_vip_networks, instance_group.availability_zones, instance_group.name)
 
           log_outcome(instance_plans)
 
@@ -29,7 +29,7 @@ module Bosh
           instance_plans
         end
 
-        def plan_obsolete_jobs(desired_jobs, existing_instances)
+        def plan_obsolete_instances(desired_jobs, existing_instances)
           desired_job_names = Set.new(desired_jobs.map(&:name))
           migrating_job_names = Set.new(desired_jobs.map(&:migrated_from).flatten.map(&:name))
           obsolete_existing_instances = existing_instances.reject do |existing_instance_model|

@@ -37,7 +37,7 @@ describe 'export release', type: :integration do
       bosh_runner.run("upload stemcell #{spec_asset('light-bosh-stemcell-3001-aws-xen-hvm-centos-7-go_agent.tgz')}")
       bosh_runner.run("upload release #{spec_asset('compiled_releases/release-test_release-1-on-centos-7-stemcell-3001.tgz')}")
 
-      set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5')})
+      set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5')})
       deploy({})
 
       out =  bosh_runner.run("export release test_release/1 toronto-os/1", failure_expected: true)
@@ -328,7 +328,7 @@ Can't use release 'test_release/1'. It references packages without source code a
         bosh_runner.run("upload stemcell #{spec_asset('valid_stemcell.tgz')}")
         upload_cloud_config(:cloud_config_hash => Bosh::Spec::Deployments.simple_cloud_config)
         bosh_runner.run("upload release #{spec_asset('compiled_releases/test_release/releases/test_release/test_release-1.tgz')}")
-        set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5')})
+        set_deployment({manifest_hash: Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5')})
         deploy({})
       end
 
@@ -348,7 +348,7 @@ Can't use release 'test_release/1'. It references packages without source code a
         bosh_runner.run("upload stemcell #{spec_asset('valid_stemcell.tgz')}")
         bosh_runner.run("upload release #{spec_asset('compiled_releases/test_release/releases/test_release/test_release-1.tgz')}")
         legacy_manifest = Bosh::Spec::Deployments.simple_cloud_config.merge(
-          Bosh::Spec::Deployments.test_deployment_manifest_with_job('job_using_pkg_5')
+          Bosh::Spec::Deployments.test_deployment_manifest_with_instance_group('job_using_pkg_5')
         )
         set_deployment(manifest_hash: legacy_manifest)
         deploy({})

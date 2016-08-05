@@ -152,7 +152,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
           .and_return(job_rel_ver)
 
         template = make_template('fake-template-name', job_rel_ver)
-        expect(job_rel_ver).to receive(:get_or_create_template)
+        expect(job_rel_ver).to receive(:get_or_create_job)
           .with('fake-template-name')
           .and_return(template)
 
@@ -168,7 +168,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
                                   .and_return(job_rel_ver)
 
         template1 = make_template('fake-template-name', job_rel_ver)
-        allow(job_rel_ver).to receive(:get_or_create_template)
+        allow(job_rel_ver).to receive(:get_or_create_job)
                               .with('fake-template-name')
                               .and_return(template1)
 
@@ -187,12 +187,12 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
           .and_return(job_rel_ver)
 
         template1 = make_template('fake-template1-name', job_rel_ver)
-        expect(job_rel_ver).to receive(:get_or_create_template)
+        expect(job_rel_ver).to receive(:get_or_create_job)
           .with('fake-template1-name')
           .and_return(template1)
 
         template2 = make_template('fake-template2-name', job_rel_ver)
-        expect(job_rel_ver).to receive(:get_or_create_template)
+        expect(job_rel_ver).to receive(:get_or_create_job)
           .with('fake-template2-name')
           .and_return(template2)
 
@@ -211,12 +211,12 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
                                    .and_return(job_rel_ver)
 
         template1 = make_template('fake-template1-name', job_rel_ver)
-        allow(job_rel_ver).to receive(:get_or_create_template)
+        allow(job_rel_ver).to receive(:get_or_create_job)
                                .with('fake-template1-name')
                                .and_return(template1)
 
         template2 = make_template('fake-template2-name', job_rel_ver)
-        allow(job_rel_ver).to receive(:get_or_create_template)
+        allow(job_rel_ver).to receive(:get_or_create_job)
                                .with('fake-template2-name')
                                .and_return(template2)
 
@@ -285,7 +285,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
                                            .with('fake-template-release')
                                            .and_return(template_rel_ver)
 
-              allow(template_rel_ver).to receive(:get_or_create_template)
+              allow(template_rel_ver).to receive(:get_or_create_job)
                                             .with('fake-template-name')
                                             .and_return(template)
               allow(template).to receive(:add_link_from_manifest)
@@ -319,7 +319,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
               allow(provides_job).to receive(:templates).and_return([provides_template])
               allow(deployment_plan).to receive(:instance_groups).and_return([provides_job])
 
-              allow(template_rel_ver).to receive(:get_or_create_template)
+              allow(template_rel_ver).to receive(:get_or_create_job)
                                             .with('fake-template-name')
                                             .and_return(template)
               allow(template).to receive(:add_link_from_manifest)
@@ -361,7 +361,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
 
               template = make_template('fake-template-name', nil)
               allow(template).to receive(:add_template_scoped_properties)
-              expect(job_rel_ver).to receive(:get_or_create_template)
+              expect(job_rel_ver).to receive(:get_or_create_job)
                 .with('fake-template-name')
                 .and_return(template)
 
@@ -396,7 +396,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
               end
 
               it 'sets job template from deployment release because first release assumed as default' do
-                expect(deployment_rel_ver).to receive(:get_or_create_template)
+                expect(deployment_rel_ver).to receive(:get_or_create_job)
                   .with('fake-template-name')
                   .and_return(template)
 
@@ -467,7 +467,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
               .with('fake-job-release')
               .and_return(job_rel_ver)
 
-            allow(job_rel_ver).to receive(:get_or_create_template) do |name|
+            allow(job_rel_ver).to receive(:get_or_create_job) do |name|
               template = instance_double('Bosh::Director::DeploymentPlan::Template', name: name)
               allow(template).to receive(:add_template_scoped_properties)
               template
@@ -511,7 +511,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
             template1 = make_template('fake-template-name1', rel_ver1)
             allow(template1).to receive(:add_template_scoped_properties)
 
-            expect(rel_ver1).to receive(:get_or_create_template)
+            expect(rel_ver1).to receive(:get_or_create_job)
                                .with('fake-template-name1')
                                .and_return(template1)
 
@@ -524,7 +524,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
             template2 = make_template('fake-template-name2', rel_ver2)
             allow(template2).to receive(:add_template_scoped_properties)
 
-            expect(rel_ver2).to receive(:get_or_create_template)
+            expect(rel_ver2).to receive(:get_or_create_job)
                                .with('fake-template-name2')
                                .and_return(template2)
 
@@ -598,7 +598,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
                                           .and_return(job_rel_ver)
 
             template = make_template('fake-template-name', nil)
-            allow(job_rel_ver).to receive(:get_or_create_template)
+            allow(job_rel_ver).to receive(:get_or_create_job)
                                       .with('fake-template-name')
                                       .and_return(template)
             expect(template).to receive(:add_template_scoped_properties)
@@ -651,7 +651,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroupSpecParser do
                                           .and_return(job_rel_ver)
 
             template = make_template('fake-template-name', nil)
-            allow(job_rel_ver).to receive(:get_or_create_template)
+            allow(job_rel_ver).to receive(:get_or_create_job)
                                       .with('fake-template-name')
                                       .and_return(template)
             allow(template).to receive(:add_template_scoped_properties)

@@ -47,7 +47,7 @@ describe 'deploy after db migrations', type: :integration do
   end
 
   let(:cleaner_job_spec) do
-    job_spec = Bosh::Spec::Deployments.simple_job(
+    job_spec = Bosh::Spec::Deployments.simple_instance_group(
         name: 'cleaner',
         templates: [{'name' => 'cleaner'}],
         instances: 1,

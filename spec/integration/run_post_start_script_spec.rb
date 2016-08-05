@@ -6,7 +6,7 @@ describe 'post start script', type: :integration do
   let(:manifest) do
     Bosh::Spec::Deployments.test_release_manifest.merge(
       {
-        'jobs' => [Bosh::Spec::Deployments.simple_job(
+        'jobs' => [Bosh::Spec::Deployments.simple_instance_group(
                      name: 'job_with_templates_having_post_start_scripts',
                      templates: [{'name' => 'job_with_post_start_script'}],
                      instances: 1,
@@ -33,7 +33,7 @@ describe 'post start script', type: :integration do
     it 'runs post-start script on subsequent deploys only when previous post-start scripts have failed' do
       manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
           {
-              'jobs' => [Bosh::Spec::Deployments.simple_job(
+              'jobs' => [Bosh::Spec::Deployments.simple_instance_group(
                              name: 'job_with_templates_having_post_start_scripts',
                              templates: [{'name' => 'job_with_post_start_script'}],
                              instances: 1,
@@ -54,7 +54,7 @@ describe 'post start script', type: :integration do
 
       manifest = Bosh::Spec::Deployments.test_release_manifest.merge(
           {
-              'jobs' => [Bosh::Spec::Deployments.simple_job(
+              'jobs' => [Bosh::Spec::Deployments.simple_instance_group(
                              name: 'job_with_templates_having_post_start_scripts',
                              templates: [{'name' => 'job_with_post_start_script'}],
                              instances: 1,

@@ -164,7 +164,7 @@ describe 'deploy job with addons', type: :integration do
       manifest_hash['releases'] = [{'name'    => 'test_release_2',
                                       'version' => '2'}]
 
-      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_job(
+      manifest_hash['jobs'] = [Bosh::Spec::Deployments.simple_instance_group(
         name: 'job',
         templates: [{'name' => 'job_using_pkg_1'}],
         instances: 1,

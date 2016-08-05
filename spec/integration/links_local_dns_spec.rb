@@ -43,7 +43,7 @@ describe 'Links', type: :integration do
   context 'when job requires link' do
 
     let(:api_job_spec) do
-      job_spec = Bosh::Spec::Deployments.simple_job(
+      job_spec = Bosh::Spec::Deployments.simple_instance_group(
           name: 'my_api',
           templates: [{'name' => 'api_server', 'consumes' => {
                   'db' => {'from' => 'db'}
@@ -56,7 +56,7 @@ describe 'Links', type: :integration do
     end
 
     let(:mysql_job_spec) do
-      job_spec = Bosh::Spec::Deployments.simple_job(
+      job_spec = Bosh::Spec::Deployments.simple_instance_group(
           name: 'mysql',
           templates: [{'name' => 'database'}],
           instances: 1,

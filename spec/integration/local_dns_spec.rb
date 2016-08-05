@@ -129,7 +129,7 @@ describe 'local DNS', type: :integration do
                 'update_watch_time' => 20
             },
 
-            'jobs' => [Bosh::Spec::Deployments.simple_job(
+            'jobs' => [Bosh::Spec::Deployments.simple_instance_group(
                 name: job_name,
                 instances: number_of_instances)]
         })

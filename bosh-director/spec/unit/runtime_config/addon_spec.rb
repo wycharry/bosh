@@ -50,7 +50,7 @@ module Bosh::Director
         let(:instance_group) do
           instance_group_parser = DeploymentPlan::InstanceGroupSpecParser.new(deployment, Config.event_log, logger)
           jobs = [{'name' => 'dummy', 'release' => 'dummy'}]
-          instance_group_parser.parse(Bosh::Spec::Deployments.simple_job(jobs: jobs), {})
+          instance_group_parser.parse(Bosh::Spec::Deployments.simple_instance_group(jobs: jobs), {})
         end
         let(:release_model) { Bosh::Director::Models::Release.make(name: 'dummy') }
         let(:release_version_model) { Bosh::Director::Models::ReleaseVersion.make(version: '0.2-dev', release: release_model) }
@@ -200,7 +200,7 @@ module Bosh::Director
           let(:include_spec) { {'deployments' => [deployment_name]} }
           let(:deployment_instance_group) {
             instance_group_parser = DeploymentPlan::InstanceGroupSpecParser.new(deployment, Config.event_log, logger)
-            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_job)
+            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_instance_group)
           }
 
           it 'applies' do
@@ -212,7 +212,7 @@ module Bosh::Director
           let(:include_spec) { {'deployments' => [deployment_name]} }
           let(:deployment_instance_group) {
             instance_group_parser = DeploymentPlan::InstanceGroupSpecParser.new(deployment, Config.event_log, logger)
-            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_job)
+            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_instance_group)
           }
 
           it 'does not applies' do
@@ -224,7 +224,7 @@ module Bosh::Director
           let(:include_spec) { {} }
           let(:deployment_instance_group) {
             instance_group_parser = DeploymentPlan::InstanceGroupSpecParser.new(deployment, Config.event_log, logger)
-            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_job)
+            instance_group_parser.parse(Bosh::Spec::Deployments.dummy_instance_group)
           }
 
           it 'applies' do

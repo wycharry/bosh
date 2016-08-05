@@ -138,7 +138,7 @@ describe 'drain', type: :integration do
         manifest_hash = Bosh::Spec::Deployments.simple_manifest
         manifest_hash['jobs'][0]['instances'] = 1
         manifest_hash['properties'] = { 'test_property' => 'drained' }
-        manifest_hash['jobs'] << Bosh::Spec::Deployments.simple_job(name: 'second', instances: 1)
+        manifest_hash['jobs'] << Bosh::Spec::Deployments.simple_instance_group(name: 'second', instances: 1)
         manifest_hash
       end
 
@@ -179,7 +179,7 @@ describe 'drain', type: :integration do
     let(:manifest_with_colocated_drainable_release_jobs) do
       Bosh::Spec::Deployments.test_release_manifest.merge(
           'jobs' => [
-              Bosh::Spec::Deployments.job_with_many_templates(
+              Bosh::Spec::Deployments.instance_group_with_many_templates(
                   name: 'colocated',
                   templates: [
                       {'name' => 'job_1_with_pre_start_script', 'release' => 'bosh-release'},

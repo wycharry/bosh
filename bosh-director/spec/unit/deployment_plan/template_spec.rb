@@ -84,7 +84,7 @@ Cannot specify 'properties' without 'instances' for link 'link_name' in job 'foo
     let(:template_model) { Bosh::Director::Models::Template.make(name: 'foo', release: release, properties: {'smurf' => { 'default' => 'black' }}) }
 
     before do
-      allow(release).to receive(:get_template_model_by_name).and_return(template_model)
+      allow(release).to receive(:get_job_model_by_name).and_return(template_model)
     end
 
     it 'should bind properties correctly' do

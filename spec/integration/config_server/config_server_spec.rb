@@ -194,7 +194,7 @@ describe 'using director with config server', type: :integration do
     end
 
     let(:my_job) do
-      job_spec = Bosh::Spec::Deployments.simple_job(
+      job_spec = Bosh::Spec::Deployments.simple_instance_group(
         name: 'my_job',
         templates: [
           {'name' => 'http_server_with_provides'},
@@ -233,7 +233,7 @@ describe 'using director with config server', type: :integration do
 
     context 'when manual links are involved' do
       let (:job_with_manual_consumes_link) do
-        job_spec = Bosh::Spec::Deployments.simple_job(
+        job_spec = Bosh::Spec::Deployments.simple_instance_group(
           name: 'property_job',
           templates: [{
             'name' => 'consumer',
