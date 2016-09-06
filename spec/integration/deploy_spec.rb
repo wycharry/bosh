@@ -76,10 +76,10 @@ Error 100: Unable to render instance groups for deployment. Errors are:
 
         upload_cloud_config(cloud_config_hash: cloud_config_hash)
 
-        bosh_runner.run("upload stemcell #{spec_asset('valid_stemcell.tgz')}")
+        bosh_runner.run("upload-stemcell #{spec_asset('valid_stemcell.tgz')}")
         stemcell_id = current_sandbox.cpi.all_stemcells[0]['id']
 
-        bosh_runner.run("upload stemcell #{spec_asset('valid_stemcell_v2.tgz')} --skip-if-exists")
+        bosh_runner.run("upload-stemcell #{spec_asset('valid_stemcell_v2.tgz')}")
 
         manifest_hash = Bosh::Spec::Deployments.simple_manifest
         manifest_hash['jobs'].first['instances'] = 1

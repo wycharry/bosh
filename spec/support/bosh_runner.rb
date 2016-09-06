@@ -32,12 +32,17 @@ module Bosh::Spec
     def run_in_dir(cmd, working_dir, options = {})
       failure_expected = options.fetch(:failure_expected, false)
       interactive_mode = options.fetch(:interactive, false) ? '' : '-n'
-      ca_cert = options.fetch(:ca_cert, nil) ? "--ca-cert #{options[:ca_cert]}" : ''
+      default_ca_cert = Bosh::Dev::Sandbox::Workspace.new.asset_path("ca/certs/rootCA.pem")
+      ca_cert = options.fetch(:ca_cert, nil) ? "--ca-cert #{options[:ca_cert]}" : "--ca-cert #{default_ca_cert}"
 
       config_path = options.fetch(:config_path, @bosh_config)
 
-      @logger.info("Running ... bosh #{interactive_mode} #{cmd}")
-      command   = "bosh #{ca_cert} #{interactive_mode} -c #{config_path} #{cmd}"
+      login = "--user=test --password=test"
+
+      command   = "bodev #{ca_cert} #{login} #{interactive_mode} #{cmd}"
+      @logger.info("Running ... `#{command}`")
+      @logger.info("IN DIR ... `#{working_dir}`")
+      sleep 30
       output    = nil
       env = options.fetch(:env, {})
       exit_code = 0
