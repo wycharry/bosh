@@ -1221,7 +1221,6 @@ Error 100: Unable to render instance groups for deployment. Errors are:
 
           it 'should successfully use shared link from a previous deployment' do
             config_server_helper.put_value(prepend_namespace("fibonacci_placeholder"), 'fibonacci_value')
-            config_server_helper.put_value(prepend_namespace("black_smurf"), 'smurfs are great')
 
             deploy_simple_manifest(no_login: true, manifest_hash: first_manifest, env: client_env)
 
