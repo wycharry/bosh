@@ -609,100 +609,100 @@ resources:
       uri: {{bosh_src_url}}
       branch: wip_flaky_UAA
       private_key: {{github_deployment_key}}
-
-  - name: candidate-version
-    type: semver
-    source:
-      bucket: {{candidate_release_bucket}}
-      key: version
-      access_key_id: {{candidate_release_access_key_id}}
-      secret_access_key: {{candidate_release_secret_access_key}}
-
-  - name: bosh-candidate-release-tarballs
-    type: s3
-    source:
-      bucket: {{candidate_release_bucket}}
-      access_key_id: {{candidate_release_access_key_id}}
-      secret_access_key: {{candidate_release_secret_access_key}}
-      regexp: "bosh.*\\+dev\\.(\\d+)\\.tgz" # bosh-257.9+dev.1472844900.tgz
-
-  - name: bosh-fuzz-tests
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry-incubator/bosh-fuzz-tests.git
-      branch: master
-
-  - name: bosh-load-tests-workspace
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry-incubator/bosh-load-tests-workspace
-      branch: master
-
-  - name: bosh-master
-    type: git
-    source:
-      uri: {{bosh_src_url}}
-      branch: master
-      private_key: {{github_deployment_key}}
-
-  - name: fuzz-interval-trigger
-    type: time
-    source:
-      interval: 15m
-
-  - name: slack-alert
-    type: slack-notification
-    source:
-      url: {{slack_hook_url}}
-
-  - name: gocli-release-bucket-linux
-    type: s3
-    source:
-      regexp: bosh-cli-(.*)-linux-amd64
-      bucket: bosh-cli-artifacts
-
-  - name: bosh-cli
-    type: s3
-    source:
-      regexp: bosh-cli-(.*)-linux-amd64
-      bucket: {{bosh_cli_aws_s3_release_bucket}}
-      region_name: {{bosh_cli_aws_s3_release_bucket_region}}
+#
+#  - name: candidate-version
+#    type: semver
+#    source:
+#      bucket: {{candidate_release_bucket}}
+#      key: version
+#      access_key_id: {{candidate_release_access_key_id}}
+#      secret_access_key: {{candidate_release_secret_access_key}}
+#
+#  - name: bosh-candidate-release-tarballs
+#    type: s3
+#    source:
+#      bucket: {{candidate_release_bucket}}
+#      access_key_id: {{candidate_release_access_key_id}}
+#      secret_access_key: {{candidate_release_secret_access_key}}
+#      regexp: "bosh.*\\+dev\\.(\\d+)\\.tgz" # bosh-257.9+dev.1472844900.tgz
+#
+#  - name: bosh-fuzz-tests
+#    type: git
+#    source:
+#      uri: https://github.com/cloudfoundry-incubator/bosh-fuzz-tests.git
+#      branch: master
+#
+#  - name: bosh-load-tests-workspace
+#    type: git
+#    source:
+#      uri: https://github.com/cloudfoundry-incubator/bosh-load-tests-workspace
+#      branch: master
+#
+#  - name: bosh-master
+#    type: git
+#    source:
+#      uri: {{bosh_src_url}}
+#      branch: master
+#      private_key: {{github_deployment_key}}
+#
+#  - name: fuzz-interval-trigger
+#    type: time
+#    source:
+#      interval: 15m
+#
+#  - name: slack-alert
+#    type: slack-notification
+#    source:
+#      url: {{slack_hook_url}}
+#
+#  - name: gocli-release-bucket-linux
+#    type: s3
+#    source:
+#      regexp: bosh-cli-(.*)-linux-amd64
+#      bucket: bosh-cli-artifacts
+#
+#  - name: bosh-cli
+#    type: s3
+#    source:
+#      regexp: bosh-cli-(.*)-linux-amd64
+#      bucket: {{bosh_cli_aws_s3_release_bucket}}
+#      region_name: {{bosh_cli_aws_s3_release_bucket_region}}
 
   #
   # BATS
   #
-
-  - name: pipelines
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry-incubator/bosh-cpi-certification
-      branch: master
-
-  - name: bats
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
-      branch: master
-
-  - name: environment
-    type: pool
-    source:
-      pool: vsphere
-      uri: git@github.com:pivotal-cf-experimental/bats-concourse-pool.git
-      branch: master
-      private_key: {{github_deployment_key__bosh-cpi-environments}}
-
-  - name: vsphere-esxi-ubuntu-trusty
-    type: bosh-io-stemcell
-    source:
-      name: bosh-vsphere-esxi-ubuntu-trusty-go_agent
-
-  - name: vsphere-esxi-centos-7
-    type: bosh-io-stemcell
-    source:
-      name: bosh-vsphere-esxi-centos-7-go_agent
-
-  - name: cpi-release
-    type: bosh-io-release
-    source:
-      repository: cloudfoundry-incubator/bosh-vsphere-cpi-release
+#
+#  - name: pipelines
+#    type: git
+#    source:
+#      uri: https://github.com/cloudfoundry-incubator/bosh-cpi-certification
+#      branch: master
+#
+#  - name: bats
+#    type: git
+#    source:
+#      uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
+#      branch: master
+#
+#  - name: environment
+#    type: pool
+#    source:
+#      pool: vsphere
+#      uri: git@github.com:pivotal-cf-experimental/bats-concourse-pool.git
+#      branch: master
+#      private_key: {{github_deployment_key__bosh-cpi-environments}}
+#
+#  - name: vsphere-esxi-ubuntu-trusty
+#    type: bosh-io-stemcell
+#    source:
+#      name: bosh-vsphere-esxi-ubuntu-trusty-go_agent
+#
+#  - name: vsphere-esxi-centos-7
+#    type: bosh-io-stemcell
+#    source:
+#      name: bosh-vsphere-esxi-centos-7-go_agent
+#
+#  - name: cpi-release
+#    type: bosh-io-release
+#    source:
+#      repository: cloudfoundry-incubator/bosh-vsphere-cpi-release
