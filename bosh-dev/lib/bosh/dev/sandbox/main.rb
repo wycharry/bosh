@@ -74,6 +74,7 @@ module Bosh::Dev::Sandbox
       @name = SecureRandom.uuid.gsub('-', '')
 
       @port_provider = PortProvider.new(test_env_number)
+      puts("==#{Thread.current.object_id}====================================================================INIT=====> test_env_number #{test_env_number}")
 
       @logs_path = sandbox_path('logs')
       @dns_db_path = sandbox_path('director-dns.sqlite')
@@ -206,6 +207,7 @@ module Bosh::Dev::Sandbox
     end
 
     def stop
+      puts("==#{Thread.current.object_id}========================================================================STOP==> test_env_number #{test_env_number}")
       @cpi.kill_agents
 
       @director_service.stop

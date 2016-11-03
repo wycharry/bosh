@@ -20,6 +20,7 @@ module Bosh::Dev::Sandbox
 
     def initialize(port_provider, base_log_path, logger)
       @port = port_provider.get_port(:uaa_http)
+      puts("==#{Thread.current.object_id}===================================================================UAA_SERVICE=====> @port #{@port}")
       @server_port = port_provider.get_port(:uaa_server)
 
       @logger = logger
