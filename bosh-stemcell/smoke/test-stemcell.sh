@@ -185,4 +185,6 @@ LOGFILE=/var/vcap/sys/log/deep/path/deepfile.log
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p /var/vcap/sys/log/deep/path && sudo touch ${LOGFILE} && echo 'test-deep-blackbox-msg' | sudo tee -a ${LOGFILE}"
 bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
 
+cat ${DOWNLOAD_DESTINATION}/syslog.*
+
 grep 'test-deep-blackbox-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
