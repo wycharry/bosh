@@ -128,6 +128,8 @@ instance_groups:
   jobs:
   - name: syslog_forwarder
     release: syslog
+    properties:
+        forward_files: true
     consumes:
       syslog_storer: { from: syslog_storer }
 EOF
@@ -166,3 +168,22 @@ download_destination=$(mktemp -d -t)
 bosh -d ./deployment.yml scp --download syslog_forwarder 0 /tmp/syslog $download_destination
 grep 'new syslog content' $download_destination/syslog.* || ( echo "logrotate did not rotate syslog and restart rsyslogd successfully" ; exit 1 )
 grep -vl 'old syslog content' $download_destination/syslog.* || ( echo "syslog contains content that should have been rotated" ; exit 1 )
+
+
+# testing log forwarding
+DOWNLOAD_DESTINATION=`mktemp -d /tmp/syslog_test-$(date +%d%m%y-%H%M%S)-XXXXX`
+
+bosh -d ./deployment.yml ssh syslog_forwarder 0 "logger syslog-forwarder-test-msg"
+bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
+
+LOGS_FROM_FORWARDER=`cat ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.* | grep 'syslog-forwarder-test-msg'`
+
+if [ -n "$LOGS_FROM_FORWARDER" ]; then
+    # there are logs from the forwarder
+    echo "successfully received logs from forwarder"
+else
+    # there are no logs from the forwarder
+    echo "ERROR: there are no logs from forwarder"
+
+    exit 1
+fi
