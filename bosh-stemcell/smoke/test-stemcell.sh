@@ -116,7 +116,7 @@ instance_groups:
     release: syslog
     properties:
       syslog:
-        transport: tcp
+        transport: udp
         port: 514
 - name: syslog_forwarder
   stemcell: default
