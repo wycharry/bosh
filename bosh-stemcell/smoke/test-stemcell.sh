@@ -190,7 +190,7 @@ fi
 
 DOWNLOAD_DESTINATION=`mktemp -d /tmp/syslog_test-$(date +%d%m%y-%H%M%S)-XXXXX`
 
-bosh -d ./deployment.yml ssh forwarder_job 0 "echo c1oudc0w | sudo -S mkdir -p /var/vcap/sys/log/deep/path && echo 'test-deep-blackbox-msg' | sudo tee -a /var/vcap/sys/log/deep/path/deepfile.log"
+bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p /var/vcap/sys/log/deep/path && echo 'test-deep-blackbox-msg' | sudo tee -a /var/vcap/sys/log/deep/path/deepfile.log"
 bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
 
 LOGS_FROM_BB_FORWARDER=`cat ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.* | grep 'test-deep-blackbox-msg'`
