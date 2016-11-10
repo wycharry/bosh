@@ -28,7 +28,8 @@ popd
 
 # bosh upload release (syslog)
 pushd syslog-release
-  bosh upload release ./*.tgz
+  bosh create release
+  bosh upload release
 popd
 
 env_attr() {
@@ -90,7 +91,7 @@ director_uuid: $(bosh status --uuid)
 
 releases:
 - name: syslog
-  version: $(cat syslog-release/version)
+  version: latest
 
 stemcells:
 - alias: default
