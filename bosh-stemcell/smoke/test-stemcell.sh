@@ -187,12 +187,17 @@ LOGFILE=/var/vcap/sys/log/deep/path/deepfile.log
 
 touch /tmp/localsummary
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
+sleep 5
 bosh -d ./deployment.yml scp --download syslog_forwarder 0 "${MONIT_SUMMARY_OUTPUT}" /tmp/localsummary
+sleep 5
 cat /tmp/localsummary
 
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p /var/vcap/sys/log/deep/path"
+sleep 5
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S touch ${LOGFILE}"
+sleep 5
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S echo 'test-deep-blackbox-msg' | sudo tee -a ${LOGFILE}"
+sleep 5
 bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" "${DOWNLOAD_DESTINATION}"
 
 grep 'test-deep-blackbox-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
