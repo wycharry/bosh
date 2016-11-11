@@ -185,8 +185,9 @@ DOWNLOAD_DESTINATION=$(mktemp -d -t)
 MONIT_SUMMARY_OUTPUT=$(mktemp -d -t)
 LOGFILE=/var/vcap/sys/log/deep/path/deepfile.log
 
+
 touch /tmp/localsummary
-bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
+bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S /var/vcap/bosh/bin/monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
 sleep 5
 bosh -d ./deployment.yml scp --download syslog_forwarder 0 "${MONIT_SUMMARY_OUTPUT}" /tmp/localsummary
 sleep 5
