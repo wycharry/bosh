@@ -179,27 +179,49 @@ bosh -d ./deployment.yml deploy
 #bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
 #
 #grep 'syslog-forwarder-test-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get logs from syslog" ; exit 1 )
+# ==================================
+## testing deep log forwarding
+#DOWNLOAD_DESTINATION=$(mktemp -d -t)
+#MONIT_SUMMARY_OUTPUT=$(mktemp -d -t)
+#LOGPATH=/var/vcap/sys/log/deep/path
+#LOGFILE=${LOGPATH}/deepfile.log
+#EXPECTED_VALUE="test-blackbox-message"
+#
+#cat > "./script.sh" <<EOF
+##!/bin/bash
+#mkdir -p ${LOGPATH}
+#touch ${LOGFILE}
+#echo "${EXPECTED_VALUE}" >> ${LOGFILE}
+#EOF
+#
+##bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S /var/vcap/bosh/bin/monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
+##bosh -d ./deployment.yml scp --download syslog_forwarder 0 "${MONIT_SUMMARY_OUTPUT}" /tmp/localsummary
+#
+#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p ${LOGPATH}"
+#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S touch ${LOGFILE}"
+#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S echo 'test-deep-blackbox-msg' | sudo tee -a ${LOGFILE}"
+#bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" "${DOWNLOAD_DESTINATION}"
+#
+#grep 'test-deep-blackbox-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
+#sleep 6000
 
-# testing deep log forwarding
 DOWNLOAD_DESTINATION=$(mktemp -d -t)
-MONIT_SUMMARY_OUTPUT=$(mktemp -d -t)
-LOGFILE=/var/vcap/sys/log/deep/path/deepfile.log
+LOGPATH=/var/vcap/sys/log/deep/path
+LOGFILE=${LOGPATH}/deepfile.log
+EXPECTED_VALUE="test-blackbox-message"
 
+cat > "./script.sh" <<EOF
+#!/bin/bash
+mkdir -p /var/vcap/sys/log/deep/path
+touch ${LOGFILE}
+echo "${EXPECTED_VALUE}" >> ${LOGFILE}
+EOF
 
-touch /tmp/localsummary
-bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S /var/vcap/bosh/bin/monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
-sleep 5
-bosh -d ./deployment.yml scp --download syslog_forwarder 0 "${MONIT_SUMMARY_OUTPUT}" /tmp/localsummary
-sleep 5
-cat /tmp/localsummary
+bosh -d ./deployment.yml scp --upload syslog_forwarder 0 ./script.sh /tmp/script.sh
+bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S bash /tmp/script.sh"
+bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" $DOWNLOAD_DESTINATION
 
-bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p /var/vcap/sys/log/deep/path"
-sleep 5
-bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S touch ${LOGFILE}"
-sleep 5
-bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S echo 'test-deep-blackbox-msg' | sudo tee -a ${LOGFILE}"
-sleep 5
-bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" "${DOWNLOAD_DESTINATION}"
+cat ${DOWNLOAD_DESTINATION}/syslog.*
 
-grep 'test-deep-blackbox-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
-sleep 6000
+sleep 900
+grep ${EXPECTED_VALUE} ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
