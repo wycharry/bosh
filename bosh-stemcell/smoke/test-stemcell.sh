@@ -214,10 +214,8 @@ cat > "./script.sh" <<EOF
 #!/bin/bash
 mkdir -p /var/vcap/sys/log/deep/path
 touch ${LOGFILE}
-sleep 60
+sleep 35
 echo "${EXPECTED_VALUE}" >> ${LOGFILE}
-sleep 60
-echo "${EXPECTED_VALUE}${EXPECTED_VALUE}" >> ${LOGFILE}
 EOF
 
 bosh -d ./deployment.yml scp --upload syslog_forwarder 0 ./script.sh /tmp/script.sh
@@ -226,5 +224,4 @@ bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_
 
 cat ${DOWNLOAD_DESTINATION}/syslog.*
 
-sleep 90000
 grep ${EXPECTED_VALUE} ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
