@@ -143,68 +143,45 @@ cleanup() {
 
 bosh -d ./deployment.yml deploy
 
-## trigger auditd event
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 'sudo modprobe -r floppy'
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger -t vcap some vcap message'
-#
-## check that syslog drain gets event
-#DOWNLOAD_DESTINATION=$(mktemp -d -t)
-#bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
-#
-#grep 'COMMAND=/sbin/modprobe -r floppy' ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.0 || ( echo "Syslog did not contain 'audit'!" ; exit 1 )
-#grep 'some vcap message' ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.0 || ( echo "Syslog did not contain 'vcap'!" ; exit 1 )
-#
-#
-##fill the syslog so it will need rotating and set cron to run logrotate every min
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger "old syslog content" \
-#	&& sudo bash -c "dd if=/dev/urandom count=10000 bs=1024 >> /var/log/syslog" \
-#	&& sudo sed -i "s/0,15,30,45/\*/" /etc/cron.d/logrotate'
-## wait for cron to run logrotate
-#sleep 62
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger "new syslog content"'
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 'sudo cp /var/vcap/data/root_log/syslog /tmp/ && sudo chmod 777 /tmp/syslog'
-#
-#DOWNLOAD_DESTINATION=$(mktemp -d -t)
-##/var/log should be bind mounted to /var/vcap/data/root_log
-## download from there to show rsyslogd is running and logging to the bind mounted directory.
-#bosh -d ./deployment.yml scp --download syslog_forwarder 0 /tmp/syslog ${DOWNLOAD_DESTINATION}
-#grep 'new syslog content' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "logrotate did not rotate syslog and restart rsyslogd successfully" ; exit 1 )
-#grep -vl 'old syslog content' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "syslog contains content that should have been rotated" ; exit 1 )
-#
+# trigger auditd event
+bosh -d ./deployment.yml ssh syslog_forwarder 0 'sudo modprobe -r floppy'
+bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger -t vcap some vcap message'
+
+# check that syslog drain gets event
+DOWNLOAD_DESTINATION=$(mktemp -d -t)
+bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
+
+grep 'COMMAND=/sbin/modprobe -r floppy' ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.0 || ( echo "Syslog did not contain 'audit'!" ; exit 1 )
+grep 'some vcap message' ${DOWNLOAD_DESTINATION}/syslog.log.syslog_storer.0 || ( echo "Syslog did not contain 'vcap'!" ; exit 1 )
+
+
+# fill the syslog so it will need rotating and set cron to run logrotate every min
+bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger "old syslog content" \
+	&& sudo bash -c "dd if=/dev/urandom count=10000 bs=1024 >> /var/log/syslog" \
+	&& sudo sed -i "s/0,15,30,45/\*/" /etc/cron.d/logrotate'
+# wait for cron to run logrotate
+sleep 62
+bosh -d ./deployment.yml ssh syslog_forwarder 0 'logger "new syslog content"'
+bosh -d ./deployment.yml ssh syslog_forwarder 0 'sudo cp /var/vcap/data/root_log/syslog /tmp/ && sudo chmod 777 /tmp/syslog'
+
+DOWNLOAD_DESTINATION=$(mktemp -d -t)
+#/var/log should be bind mounted to /var/vcap/data/root_log
+# download from there to show rsyslogd is running and logging to the bind mounted directory.
+bosh -d ./deployment.yml scp --download syslog_forwarder 0 /tmp/syslog ${DOWNLOAD_DESTINATION}
+grep 'new syslog content' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "logrotate did not rotate syslog and restart rsyslogd successfully" ; exit 1 )
+grep -vl 'old syslog content' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "syslog contains content that should have been rotated" ; exit 1 )
+
 
 # testing log forwarding
-#DOWNLOAD_DESTINATION=$(mktemp -d -t)
-#
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 "logger syslog-forwarder-test-msg"
-#bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
-#
-#grep 'syslog-forwarder-test-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get logs from syslog" ; exit 1 )
-# ==================================
-## testing deep log forwarding
-#DOWNLOAD_DESTINATION=$(mktemp -d -t)
-#MONIT_SUMMARY_OUTPUT=$(mktemp -d -t)
-#LOGPATH=/var/vcap/sys/log/deep/path
-#LOGFILE=${LOGPATH}/deepfile.log
-#EXPECTED_VALUE="test-blackbox-message"
-#
-#cat > "./script.sh" <<EOF
-##!/bin/bash
-#mkdir -p ${LOGPATH}
-#touch ${LOGFILE}
-#echo "${EXPECTED_VALUE}" >> ${LOGFILE}
-#EOF
-#
-##bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S /var/vcap/bosh/bin/monit summary | sudo tee -a ${MONIT_SUMMARY_OUTPUT}"
-##bosh -d ./deployment.yml scp --download syslog_forwarder 0 "${MONIT_SUMMARY_OUTPUT}" /tmp/localsummary
-#
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S mkdir -p ${LOGPATH}"
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S touch ${LOGFILE}"
-#bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S echo 'test-deep-blackbox-msg' | sudo tee -a ${LOGFILE}"
-#bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" "${DOWNLOAD_DESTINATION}"
-#
-#grep 'test-deep-blackbox-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
-#sleep 6000
+DOWNLOAD_DESTINATION=$(mktemp -d -t)
 
+bosh -d ./deployment.yml ssh syslog_forwarder 0 "logger syslog-forwarder-test-msg"
+bosh -d ./deployment.yml scp --download syslog_storer 0 /var/vcap/store/syslog_storer/syslog.log ${DOWNLOAD_DESTINATION}
+
+grep 'syslog-forwarder-test-msg' ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get logs from syslog" ; exit 1 )
+
+
+# testing deep log forwarding
 DOWNLOAD_DESTINATION=$(mktemp -d -t)
 LOGPATH=/var/vcap/sys/log/deep/path
 LOGFILE=${LOGPATH}/deepfile.log
@@ -221,7 +198,5 @@ EOF
 bosh -d ./deployment.yml scp --upload syslog_forwarder 0 ./script.sh /tmp/script.sh
 bosh -d ./deployment.yml ssh syslog_forwarder 0 "echo c1oudc0w | sudo -S bash /tmp/script.sh"
 bosh -d ./deployment.yml scp --download syslog_storer 0 "/var/vcap/store/syslog_storer/syslog.log" $DOWNLOAD_DESTINATION
-
-cat ${DOWNLOAD_DESTINATION}/syslog.*
 
 grep ${EXPECTED_VALUE} ${DOWNLOAD_DESTINATION}/syslog.* || ( echo "was not able to get message forwarded from BlackBox" ; exit 1 )
