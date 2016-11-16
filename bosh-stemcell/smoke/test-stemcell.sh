@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -e -x
+#set -e -x
+set -x
 
 source /etc/profile.d/chruby.sh
 chruby 2.1
@@ -15,6 +16,8 @@ bosh() {
 
 # login
 bosh login "${BOSH_DIRECTOR_USERNAME}" "${BOSH_DIRECTOR_PASSWORD}"
+
+sleep 9000
 
 cleanup() {
   bosh cleanup --all
