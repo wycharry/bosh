@@ -4,10 +4,11 @@ module Bosh::Director::ConfigServer
   describe DeploymentHTTPClient do
     subject(:client) { DeploymentHTTPClient.new(deployment_name, http_client) }
     let(:deployment_name) { nil }
+    let(:placeholder_set_id) { 'abc123' }
     let(:director_name) { 'smurf_director_name' }
     let(:deployment_name) { 'deployment_name' }
     let(:logger) { double('Logging::Logger') }
-    let!(:deployment_model) { Bosh::Director::Models::Deployment.make(name: deployment_name) }
+    let!(:deployment_model) { Bosh::Director::Models::Deployment.make(name: deployment_name, placeholder_set_id: placeholder_set_id) }
     let(:http_client) { double('Bosh::Director::ConfigServer::HTTPClient') }
 
     def prepend_namespace(name)
@@ -63,7 +64,6 @@ module Bosh::Director::ConfigServer
         response
       end
 
-
       before do
         mock_config_store.each do |name, value|
           allow(http_client).to receive(:get).with(name).and_return(value)
@@ -82,6 +82,7 @@ module Bosh::Director::ConfigServer
         [integer_placeholder, job_placeholder, env_placeholder, cert_placeholder].each do |placeholder|
           received_mapping = mappings.select { |mapping| mapping.placeholder_id == placeholder['data'][0]['id'] }.first
           expect(received_mapping.placeholder_name).to eq(placeholder['data'][0]['name'])
+          expect(received_mapping.set_id).to eq(placeholder_set_id)
         end
       end
 

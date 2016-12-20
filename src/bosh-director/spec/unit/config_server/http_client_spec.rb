@@ -115,6 +115,28 @@ describe Bosh::Director::ConfigServer::HTTPClient do
     end
   end
 
+  describe '#get_by_id' do
+    context 'when successful' do
+      let(:mock_response) do
+        response = MockSuccessResponse.new
+        response.body = 'some_response'
+        response
+      end
+
+      it 'makes a GET call to config server @ /v1/data/{id} and returns response' do
+        expect(mock_http).to receive(:get).with('/v1/data/smurf_id', {'Authorization' => 'fake-auth-header'}).and_return(mock_response)
+        expect(subject.get_by_id('smurf_id')).to eq(mock_response)
+      end
+    end
+
+    context 'when a OpenSSL::SSL::SSLError error is raised' do
+      it 'it throws a Bosh::Director::ConfigServerSSLError error' do
+        allow(mock_http).to receive(:get).with('/v1/data/smurf_id', {'Authorization' => 'fake-auth-header'}).and_raise(OpenSSL::SSL::SSLError)
+        expect{subject.get_by_id('smurf_id')}.to raise_error(Bosh::Director::ConfigServerSSLError, 'Config Server SSL error')
+      end
+    end
+  end
+
   describe '#post' do
     let(:request_body) do
       {

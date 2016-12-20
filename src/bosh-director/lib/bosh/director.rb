@@ -70,6 +70,7 @@ require 'cloud/errors'
 require 'bosh/director/compile_task'
 require 'bosh/director/key_generator'
 require 'bosh/director/package_dependencies_manager'
+require 'bosh/director/placeholder_manager'
 
 require 'bosh/director/job_renderer'
 require 'bosh/director/rendered_templates_persister'

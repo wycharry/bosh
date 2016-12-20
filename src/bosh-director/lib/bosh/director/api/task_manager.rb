@@ -15,6 +15,11 @@ module Bosh::Director
         task
       end
 
+      def find_recent_task(deployment_name)
+        task = Models::Task.where(deployment_name:deployment_name, state:"processing").first
+
+      end
+
       # Returns hash representation of the task
       # @param [Models::Task] task Director task
       # @return [Hash] Hash task representation

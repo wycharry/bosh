@@ -103,6 +103,7 @@ module Bosh::Director
         index = instance.index
 
         options = {
+          'state' => params['state'],
           'job_states' => {
             params[:job] => {
               'instance_states' => {

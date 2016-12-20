@@ -18,8 +18,17 @@ module Bosh::Director::ConfigServer
     end
 
     def get(name)
-      uri = build_base_uri
-      uri.query = URI.escape("name=#{name}")
+      uri = name_uri(name)
+
+      begin
+        @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
+      rescue OpenSSL::SSL::SSLError
+        raise Bosh::Director::ConfigServerSSLError, 'Config Server SSL error'
+      end
+    end
+
+    def get_by_id(id)
+      uri = id_uri(id)
 
       begin
         @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
@@ -29,7 +38,7 @@ module Bosh::Director::ConfigServer
     end
 
     def post(body)
-      uri = build_base_uri
+      uri = base_uri
       begin
         @http.post(uri.path, Yajl::Encoder.encode(body), {'Authorization' => @auth_provider.auth_header, 'Content-Type' => 'application/json'})
       rescue OpenSSL::SSL::SSLError
@@ -49,7 +58,17 @@ module Bosh::Director::ConfigServer
       end
     end
 
-    def build_base_uri
+    def name_uri(name)
+      uri = URI.join(@config_server_uri, URI.escape('v1/data'))
+      uri.query = URI.escape("name=#{name}")
+      uri
+    end
+
+    def id_uri(id)
+      URI.join(@config_server_uri, URI.escape("v1/data/#{id}"))
+    end
+
+    def base_uri
       URI.join(@config_server_uri, URI.escape('v1/data'))
     end
   end

@@ -19,15 +19,15 @@ module Bosh::Director::ConfigServer
     #   Options include:
     #   - 'subtrees_to_ignore': [Array] Array of paths that should not be interpolated in src
     #   - 'must_be_absolute_name': [Boolean] Flag to check if all the placeholders start with '/'
+    #   - 'set_id': [String] The set of placeholders to use for interpolation
     # @return [Hash] A Deep copy of the interpolated src Hash
     def interpolate(src, deployment_name, options = {})
       subtrees_to_ignore = options.fetch(:subtrees_to_ignore, [])
-      must_be_absolute_name = options.fetch(:must_be_absolute_name, false)
 
       placeholders_paths = @deep_hash_replacer.placeholders_paths(src, subtrees_to_ignore)
       placeholders_list = placeholders_paths.map { |c| c['placeholder'] }.uniq
 
-      retrieved_config_server_values, missing_names = fetch_names_values(placeholders_list, deployment_name, must_be_absolute_name)
+      retrieved_config_server_values, missing_names = fetch_values(placeholders_list, deployment_name, options)
       if missing_names.length > 0
         raise Bosh::Director::ConfigServerMissingNames, "Failed to load placeholder names from the config server: #{missing_names.join(', ')}"
       end
@@ -146,6 +146,19 @@ module Bosh::Director::ConfigServer
       end
     end
 
+    def get_value_for_id(id)
+      response = @config_server_http_client.get_by_id(id)
+
+      if response.kind_of? Net::HTTPOK
+        response_body = JSON.parse(response.body)
+        return response_body['value']
+      elsif response.kind_of? Net::HTTPNotFound
+        raise Bosh::Director::ConfigServerMissingNames, "Failed to load placeholder id '#{id}' from the config server"
+      else
+        raise Bosh::Director::ConfigServerUnknownError, "Unknown config server error: #{response.code}  #{response.message.dump}"
+      end
+    end
+
     def name_exists?(name)
       begin
         returned_name = get_value_for_name(name)
@@ -155,7 +168,10 @@ module Bosh::Director::ConfigServer
       end
     end
 
-    def fetch_names_values(placeholders, deployment_name, must_be_absolute_name)
+    def fetch_values(placeholders, deployment_name, options)
+      must_be_absolute_name = options.fetch(:must_be_absolute_name, false)
+      mappings = Bosh::Director::PlaceholderManager.get_mappings_for_set(set_id)
+
       missing_names = []
       config_values = {}
 
@@ -169,7 +185,12 @@ module Bosh::Director::ConfigServer
         )
 
         begin
-          config_values[placeholder] = get_value_for_name(name)
+          id = mappings.fetch(name, nil)
+          if id == nil
+            config_values[placeholder] = get_value_for_name(name)
+          else
+            config_values[placeholder] = get_value_for_id(id)
+          end
         rescue Bosh::Director::ConfigServerMissingNames
           missing_names << name
         end
