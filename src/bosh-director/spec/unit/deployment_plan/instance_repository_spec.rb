@@ -61,7 +61,7 @@ describe Bosh::Director::DeploymentPlan::InstanceRepository do
     describe 'binding existing reservations' do
       context 'when instance has reservations in db' do
         before do
-          existing_instance.add_ip_address(BD::Models::IpAddress.make(address: 123))
+          existing_instance.add_ip_address(BD::Models::IpAddress.make(address_str: "123"))
         end
 
         it 'is using reservation from database' do
@@ -161,7 +161,7 @@ describe Bosh::Director::DeploymentPlan::InstanceRepository do
     describe 'binding existing reservations' do
       context 'when instance has reservations in db' do
         before do
-          existing_instance.add_ip_address(BD::Models::IpAddress.make(address: 123))
+          existing_instance.add_ip_address(BD::Models::IpAddress.make(address_str: "123"))
         end
 
         it 'is using reservation from database' do
