@@ -4,33 +4,15 @@ module Bosh::Director::ConfigServer
       @http_client = http_client
     end
 
-    def get_by_id(id)
+    def get(path, header = nil, dest = nil, &block)
       connection_retryable.retryer do
-        auth_retryable.retryer do
-          response = @http_client.get_by_id(id)
-          raise Bosh::Director::UAAAuthorizationError if response.kind_of? Net::HTTPUnauthorized
-          response
-        end
+        @http_client.get(path, header, dest, &block)
       end
     end
 
-    def get(name)
+    def post(path, data, header = nil, dest = nil, &block)
       connection_retryable.retryer do
-        auth_retryable.retryer do
-          response = @http_client.get(name)
-          raise Bosh::Director::UAAAuthorizationError if response.kind_of? Net::HTTPUnauthorized
-          response
-        end
-      end
-    end
-
-    def post(body)
-      connection_retryable.retryer do
-        auth_retryable.retryer do
-          response = @http_client.post(body)
-          raise Bosh::Director::UAAAuthorizationError if response.kind_of? Net::HTTPUnauthorized
-          response
-        end
+        @http_client.post(path, data, header, dest, &block)
       end
     end
 
@@ -48,13 +30,6 @@ module Bosh::Director::ConfigServer
           OpenSSL::SSL::SSLError,
       ]
       Bosh::Retryable.new({sleep: 0, tries: 3, on: handled_exceptions})
-    end
-
-    def auth_retryable
-      handled_exceptions = [
-          Bosh::Director::UAAAuthorizationError,
-      ]
-      Bosh::Retryable.new({sleep: 0, tries: 2, on: handled_exceptions})
     end
   end
 end

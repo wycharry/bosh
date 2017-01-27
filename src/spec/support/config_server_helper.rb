@@ -37,7 +37,7 @@ module Bosh::Spec
     end
 
     def auth_header
-      auth_provider = Bosh::Director::UAAAuthProvider.new(@uaa_config_hash, logger)
+      auth_provider = Bosh::Director::ConfigServer::UAAAuthProvider.new(@uaa_config_hash, logger)
       ex = nil
 
       20.times do
