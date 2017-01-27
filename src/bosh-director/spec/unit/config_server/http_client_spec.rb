@@ -34,25 +34,11 @@ describe Bosh::Director::ConfigServer::HTTPClient do
 
   let(:mock_http) { double('Net::HTTP') }
 
-  let(:handled_exceptions) {
-    [
-        SocketError,
-        Errno::ECONNREFUSED,
-        Errno::ETIMEDOUT,
-        Errno::ECONNRESET,
-        Timeout::Error,
-        HTTPClient::TimeoutError,
-        HTTPClient::KeepAliveDisconnected,
-        OpenSSL::SSL::SSLError
-    ]
-  }
   let(:mock_response) do
     response = MockSuccessResponse.new
     response.body = 'some_response'
     response
   end
-
-  let(:connection_error) {Errno::ECONNREFUSED.new('')}
 
   before do
     expect(mock_http).to receive(:use_ssl=)
@@ -108,144 +94,29 @@ describe Bosh::Director::ConfigServer::HTTPClient do
   end
 
   describe '#get_by_id' do
-    context 'when successful' do
-      it 'makes a GET call using "id" resource' do
-        expect(mock_http).to receive(:get).with('/v1/data/boo', {'Authorization' => 'fake-auth-header'}).and_return(mock_response)
-        expect(subject.get_by_id('boo')).to eq(mock_response)
-      end
-    end
-
-    context 'when a GET call fails due to a connection error' do
-      it 'it throws a connection error after trying 3 times' do
-        allow(mock_http).to receive(:get).with('/v1/data/boo', {'Authorization' => 'fake-auth-header'}).and_raise(connection_error)
-
-        expect(mock_http).to receive(:get).exactly(3).times
-        expect{subject.get_by_id('boo')}.to raise_error(connection_error)
-      end
-    end
-
-    context 'when a GET call fails due to a connection error and then recovers on a subsequent retry' do
-      before do
-        count = 0
-        allow(mock_http).to receive(:get) do
-          count += 1
-          if count < 3
-            raise connection_error
-          end
-          mock_response
-        end
-      end
-
-      it 'does NOT raise an exception' do
-        expect(mock_http).to receive(:get).exactly(3).times
-        expect{subject.get_by_id('/hi/ya')}.to_not raise_error
-      end
-    end
-
-    it 'sets the appropriate exceptions to handle on retryable' do
-      retryable = double("Bosh::Retryable")
-      allow(retryable).to receive(:retryer).and_return(mock_response)
-
-      allow(Bosh::Retryable).to receive(:new).with({sleep:0, tries: 3, on: handled_exceptions}).and_return(retryable)
-
-      subject.get_by_id('boo')
+    it 'makes a GET call using "id" resource' do
+      expect(mock_http).to receive(:get).with('/v1/data/boo', {'Authorization' => 'fake-auth-header'}).and_return(mock_response)
+      expect(subject.get_by_id('boo')).to eq(mock_response)
     end
   end
 
   describe '#get' do
-    context 'when successful' do
-      it "makes a GET call using 'name' query parameter for variable name and 'current' query parameter set to true" do
-        expect(mock_http).to receive(:get).with('/v1/data?name=smurf_key&current=true', {'Authorization' => 'fake-auth-header'}).and_return(mock_response)
-        expect(subject.get('smurf_key')).to eq(mock_response)
-      end
-    end
-
-    context 'when a GET call fails due to a connection error' do
-      it 'it throws a connection error after trying 3 times' do
-        allow(mock_http).to receive(:get).with('/v1/data?name=smurf_key&current=true', {'Authorization' => 'fake-auth-header'}).and_raise(connection_error)
-
-        expect(mock_http).to receive(:get).exactly(3).times
-        expect{subject.get('smurf_key')}.to raise_error(connection_error)
-      end
-    end
-
-    context 'when a GET call fails due to a connection error and then recovers on a subsequent retry' do
-      before do
-        count = 0
-        allow(mock_http).to receive(:get) do
-          count += 1
-          if count < 3
-            raise connection_error
-          end
-          mock_response
-        end
-      end
-
-      it 'does NOT raise an exception' do
-        expect(mock_http).to receive(:get).exactly(3).times
-        expect{subject.get('/hi/ya')}.to_not raise_error
-      end
-    end
-
-    it 'sets the appropriate exceptions to handle on retryable' do
-
-      retryable = double("Bosh::Retryable")
-      allow(retryable).to receive(:retryer).and_return(mock_response)
-
-      allow(Bosh::Retryable).to receive(:new).with({sleep:0, tries: 3, on: handled_exceptions}).and_return(retryable)
-
-      subject.get('smurf_key')
+    it "makes a GET call using 'name' query parameter for variable name and 'current' query parameter set to true" do
+      expect(mock_http).to receive(:get).with('/v1/data?name=smurf_key&current=true', {'Authorization' => 'fake-auth-header'}).and_return(mock_response)
+      expect(subject.get('smurf_key')).to eq(mock_response)
     end
   end
 
   describe '#post' do
     let(:request_body) do
       {
-        'stuff'=> 'hello'
+          'stuff' => 'hello'
       }
     end
 
-    context 'when successful' do
-      it 'makes a POST call to config server @ /v1/data/{key} with body and returns response' do
-        expect(mock_http).to receive(:post).with('/v1/data', Yajl::Encoder.encode(request_body), {'Authorization' => 'fake-auth-header', 'Content-Type' => 'application/json'}).and_return(mock_response)
-        expect(subject.post(request_body)).to eq(mock_response)
-      end
-    end
-
-    context 'when a POST call fails due to a connection error' do
-      it 'it throws a connection error' do
-        allow(mock_http).to receive(:post).and_raise(connection_error)
-        expect(mock_http).to receive(:post).exactly(3).times
-        expect{subject.post(request_body)}.to raise_error(connection_error)
-      end
-    end
-
-    context 'when a POST call fails due to a connection error and then recovers on a subsequent retry' do
-      before do
-        count = 0
-        allow(mock_http).to receive(:post) do
-          count += 1
-          if count < 3
-            raise connection_error
-          end
-          mock_response
-        end
-      end
-
-      it 'does NOT raise an exception' do
-        expect(mock_http).to receive(:post).exactly(3).times
-        expect{subject.post(request_body)}.to_not raise_error
-      end
-    end
-
-    it 'sets the appropriate exceptions to handle on retryable' do
-      retryable = double("Bosh::Retryable")
-      allow(retryable).to receive(:retryer).and_return(mock_response)
-
-      allow(Bosh::Retryable).to receive(:new).with({sleep:0, tries: 3, on: handled_exceptions}).and_return(retryable)
-
-      subject.post(request_body)
+    it 'makes a POST call to config server @ /v1/data/{key} with body and returns response' do
+      expect(mock_http).to receive(:post).with('/v1/data', Yajl::Encoder.encode(request_body), {'Authorization' => 'fake-auth-header', 'Content-Type' => 'application/json'}).and_return(mock_response)
+      expect(subject.post(request_body)).to eq(mock_response)
     end
   end
-
 end

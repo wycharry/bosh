@@ -19,48 +19,21 @@ module Bosh::Director::ConfigServer
 
     def get_by_id(id)
       uri = URI.join(@config_server_uri, URI.escape("v1/data/#{id}"))
-      get_exception = nil
-      begin
-        retryable.retryer do |retries, exception|
-          get_exception = exception
-          @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
-        end
-      rescue => e
-        e = get_exception.nil? ? e : get_exception
-        raise e
-      end
+      @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
     end
 
     def get(name)
       uri = build_base_uri
       uri.query = URI.escape("name=#{name}&current=true")
-      retryable.retryer do
-        @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
-      end
+      @http.get(uri.request_uri, {'Authorization' => @auth_provider.auth_header})
     end
 
     def post(body)
       uri = build_base_uri
-      retryable.retryer do
-        @http.post(uri.path, Yajl::Encoder.encode(body), {'Authorization' => @auth_provider.auth_header, 'Content-Type' => 'application/json'})
-      end
+      @http.post(uri.path, Yajl::Encoder.encode(body), {'Authorization' => @auth_provider.auth_header, 'Content-Type' => 'application/json'})
     end
 
     private
-
-    def retryable
-      handled_exceptions = [
-          SocketError,
-          Errno::ECONNREFUSED,
-          Errno::ETIMEDOUT,
-          Errno::ECONNRESET,
-          ::Timeout::Error,
-          ::HTTPClient::TimeoutError,
-          ::HTTPClient::KeepAliveDisconnected,
-          OpenSSL::SSL::SSLError
-      ]
-      Bosh::Retryable.new({sleep: 0, tries: 3, on: handled_exceptions})
-    end
 
     def set_cert_store(ca_cert_path)
       if ca_cert_path && File.exist?(ca_cert_path) && !File.read(ca_cert_path).strip.empty?
