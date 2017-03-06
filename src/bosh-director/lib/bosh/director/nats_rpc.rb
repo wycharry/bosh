@@ -2,8 +2,6 @@ module Bosh::Director
   # Remote procedure call client wrapping NATS
   class NatsRpc
 
-    attr_reader   :nats
-
     def initialize(nats_uri, nats_server_ca_path)
       @nats_uri = nats_uri
       @nats_server_ca_path = nats_server_ca_path
@@ -62,30 +60,16 @@ module Bosh::Director
 
     private
 
-    attr_reader   :nats_connection_error
-
     def connect
       # double-check locking to reduce synchronization
       if @nats.nil?
         @lock.synchronize do
           if @nats.nil?
-            @nats_connection_error = nil
-
             NATS.on_error do |e|
-              @nats_connection_error ||= e
-              @logger.error("NATS client error: #{@nats_connection_error}")
+              @logger.error("NATS client error: #{e}")
             end
 
             @nats = NATS.connect(uri: @nats_uri, ssl: true, tls: {ca_file: @nats_server_ca_path} )
-
-            Bosh::Common.retryable(sleep: 1, tries: 5) do
-              @nats.connected? || @nats_connection_error
-            end
-
-            if @nats_connection_error
-              raise @nats_connection_error
-            end
-
           end
         end
       end

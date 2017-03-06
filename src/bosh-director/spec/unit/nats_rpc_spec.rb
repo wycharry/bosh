@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe Bosh::Director::NatsRpc do
-  let(:logger) { double(:logger) }
   let(:nats) { instance_double('NATS') }
   let(:nats_url) { 'fake-nats-url' }
   let(:nats_server_ca_path) { '/path/to/happiness.pem' }
@@ -9,11 +8,8 @@ describe Bosh::Director::NatsRpc do
   subject(:nats_rpc) { Bosh::Director::NatsRpc.new(nats_url, nats_server_ca_path) }
 
   before do
-    allow(Bosh::Director::Config).to receive(:logger).and_return(logger)
-    allow(logger).to receive(:debug)
-    allow(Bosh::Director::Config).to receive(:process_uuid).and_return(123)
     allow(NATS).to receive(:connect).with(nats_options).and_return(nats)
-    allow(nats).to receive(:connected?).and_return(true)
+    allow(Bosh::Director::Config).to receive(:process_uuid).and_return(123)
     allow(EM).to receive(:schedule).and_yield
     allow(nats_rpc).to receive(:generate_request_id).and_return('req1')
   end
@@ -24,7 +20,7 @@ describe Bosh::Director::NatsRpc do
       expect(nats_rpc.nats).to eq(nats)
     end
 
-    context 'when an error occurs due to incorrect configuration' do
+    context 'when an error occurs while connecting' do
       before do
         allow(NATS).to receive(:connect).with(nats_options).and_raise('a NATS error has occurred')
       end
@@ -33,36 +29,6 @@ describe Bosh::Director::NatsRpc do
         expect{
           nats_rpc.nats
         }.to raise_error('An error has occurred while connecting to NATS: a NATS error has occurred')
-      end
-    end
-
-    context 'when an error occurs due to a connection issue' do
-      before do
-        allow(logger).to receive(:error)
-        expect(NATS).to receive(:connect).with(nats_options).and_return(nats)
-        allow(NATS).to receive(:on_error) do | &blk |
-          blk.call("Some Connection Issue")
-        end
-      end
-
-      it 'throws the error' do
-        expect{
-          nats_rpc.nats
-        }.to raise_error('An error has occurred while connecting to NATS: Some Connection Issue')
-      end
-    end
-
-    context 'when connection cannot be established and the retries are exhausted' do
-      before do
-        allow(logger).to receive(:error)
-        expect(NATS).to receive(:connect).with(nats_options).and_return(nats)
-        allow(nats).to receive(:connected?).and_return(false)
-      end
-
-      it 'throws an error' do
-        expect{
-          nats_rpc.nats
-        }.to raise_error('An error has occurred while connecting to NATS: Bosh::Common::RetryCountExceeded')
       end
     end
   end
