@@ -249,6 +249,14 @@ describe Bosh::Director::Config do
         end
       end
     end
+
+    describe 'director version' do
+      it 'sets the expected version/revision' do
+        described_class.configure(test_config)
+        expect(described_class.revision).to match /^[0-9a-f]{8}$/
+        expect(described_class.version).to eq('0.0.2')
+      end
+    end
   end
 
   describe '#identity_provider' do
@@ -319,6 +327,30 @@ describe Bosh::Director::Config do
         described_class.configure(test_config)
         expect(described_class.canonized_dns_domain_name).to eq('test-domain-name')
       end
+    end
+  end
+
+  describe '#name' do
+    subject(:config) { Bosh::Director::Config.new(test_config) }
+
+    it 'returns the name specified in the config' do
+      expect(config.name).to eq('Test Director')
+    end
+  end
+
+  describe '#port' do
+    subject(:config) { Bosh::Director::Config.new(test_config) }
+
+    it 'returns the port specified in the config' do
+      expect(config.port).to eq(8081)
+    end
+  end
+
+  describe '#version' do
+    subject(:config) { Bosh::Director::Config.new(test_config) }
+
+    it 'returns the version specified in the config' do
+      expect(config.version).to eq('0.0.2')
     end
   end
 
