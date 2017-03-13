@@ -118,6 +118,18 @@ module Bosh::Director
           collection.send(method_name, *method_args)
         end
       end
+
+      context 'when cpi do not know the method' do
+        it 'delegates to all elements in collection and logs errors for each non-implementing cloud' do
+          expect(nimbus[:cpi]).to receive(method_name).with(*method_args).and_raise(Bosh::Clouds::InvalidCall)
+          expect(cumulus[:cpi]).to receive(method_name).with(*method_args).and_raise(Bosh::Clouds::InvalidCall)
+
+          expect(logger).to receive(:debug).with(/nimbus/, kind_of(String))
+          expect(logger).to receive(:debug).with(/cumulus/, kind_of(String))
+
+          collection.send(method_name, *method_args)
+        end
+      end
     end
 
     describe 'delete_snapshot' do

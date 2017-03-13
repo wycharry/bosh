@@ -41,7 +41,7 @@ module Bosh::Director
 
         cloud.set_disk_metadata(disk.disk_cid, metadata)
       end
-    rescue Bosh::Clouds::NotImplemented => e
+    rescue Bosh::Clouds::NotImplemented, Bosh::Clouds::InvalidCall => e
        @logger.debug(e.inspect)
     end
   end

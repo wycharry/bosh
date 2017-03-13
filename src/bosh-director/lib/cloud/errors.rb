@@ -2,6 +2,7 @@ module Bosh
   module Clouds
     class CpiError < StandardError; end
     class NotImplemented < CpiError; end
+    class InvalidCall < CpiError; end
     class NotSupported < CpiError; end
 
     class CloudError < StandardError; end

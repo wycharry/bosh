@@ -174,5 +174,13 @@ describe Bosh::Director::MetadataUpdater do
         expect { metadata_updater.update_disk_metadata(cloud, disk, {}) }.to_not raise_error
       end
     end
+
+    context 'when set_disk_metadata raises invalid call error' do
+      before { allow(cloud).to receive(:set_disk_metadata).and_raise(Bosh::Clouds::InvalidCall) }
+
+      it 'does not propagate raised error' do
+        expect { metadata_updater.update_disk_metadata(cloud, disk, {}) }.to_not raise_error
+      end
+    end
   end
 end

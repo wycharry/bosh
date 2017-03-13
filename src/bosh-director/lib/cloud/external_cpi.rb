@@ -16,6 +16,7 @@ module Bosh::Clouds
     Bosh::Clouds::CpiError
     Bosh::Clouds::NotSupported
     Bosh::Clouds::NotImplemented
+    Bosh::Clouds::InvalidCall
 
     Bosh::Clouds::CloudError
     Bosh::Clouds::VMNotFound

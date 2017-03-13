@@ -217,6 +217,10 @@ describe Bosh::Clouds::ExternalCpi do
         it_raises_an_error(Bosh::Clouds::NotImplemented)
       end
 
+      context 'when cpi returns InvalidCall error' do
+        it_raises_an_error(Bosh::Clouds::InvalidCall)
+      end
+
       context 'when cpi returns NotSupported error' do
         it_raises_an_error(Bosh::Clouds::NotSupported)
       end
