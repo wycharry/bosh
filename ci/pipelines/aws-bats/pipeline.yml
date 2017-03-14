@@ -5,11 +5,12 @@ jobs:
     plan:
     - do:
       - aggregate:
-        - {get: stemcell,      trigger: true, resource: ubuntu-stemcell}
-        - {get: bosh-release,  trigger: true, resource: bosh-candidate-release-tarballs}
-        - {get: bats,          trigger: false}
-        - {get: bosh-cli,      trigger: false}
-        - {get: bosh-src,      trigger: false}
+        - {get: stemcell,         trigger: true, resource: ubuntu-stemcell}
+        - {get: bosh-release,     trigger: true, resource: bosh-candidate-release-tarballs}
+        - {get: bats,             trigger: false}
+        - {get: bosh-cli,         trigger: false}
+        - {get: bosh-src,         trigger: false}
+        - {get: bosh-deployment,  trigger: false}
       - put: environment
         params:
           acquire: true
@@ -122,3 +123,8 @@ resources:
     source:
       uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
       branch: gocli-bats
+  - name: bosh-deployment
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh-deployment.git
+      branch: master
