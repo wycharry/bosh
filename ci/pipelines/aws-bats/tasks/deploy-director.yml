@@ -17,4 +17,4 @@ outputs:
 - name: director-state
 
 run:
-  path: bosh-src/ci/tasks/aws-bats/deploy-director.sh
+  path: bosh-src/ci/pipelines/aws-bats/tasks/deploy-director.sh
