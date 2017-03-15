@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+source /etc/profile.d/chruby.sh
+chruby 2.1.7
+
 set -eu
 
 function cp_artifacts {
@@ -7,9 +10,6 @@ function cp_artifacts {
   cp director.yml director-creds.yml director-state.json director-state/
 }
 trap cp_artifacts EXIT
-
-source /etc/profile.d/chruby.sh
-chruby 2.1.7
 
 export AWS_ACCESS_KEY_ID=$BOSH_access_key_id
 export AWS_SECRET_ACCESS_KEY=$BOSH_secret_access_key
