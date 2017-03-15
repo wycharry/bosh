@@ -46,7 +46,7 @@ namespace :fly do
     task_names = groups.each_with_index.map do |group, index|
       name = "integration_#{index + 1}"
       task name do
-        execute('test-integration', '-p', {
+        execute('test-integration', '-p --inputs-from=bosh/integration-2.3-postgres', {
             DB: (ENV['DB'] || 'postgresql'),
             SPEC_PATH: (ENV['SPEC_PATH'] || nil),
             GROUP: group,
