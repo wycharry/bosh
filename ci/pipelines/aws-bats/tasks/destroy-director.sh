@@ -12,6 +12,6 @@ export BOSH_CLIENT_SECRET=`bosh-cli int director-state/director-creds.yml --path
 
 set +e
 
-bosh deployments | cut -f1 | grep '[^[:space:]]' | xargs -n1 bosh delete-deployment
+bosh-cli deployments | cut -f1 | grep '[^[:space:]]' | xargs -n1 bosh delete-deployment
 bosh-cli clean-up -n --all
 bosh-cli delete-env -n director-state/director.yml -l director-state/director-creds.yml

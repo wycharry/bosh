@@ -51,8 +51,6 @@ bosh-cli interpolate bosh-deployment/bosh.yml \
   --var-file private_key=<(aws ec2 create-key-pair --key-name $aws_keypair_name | jq --raw-output .KeyMaterial) \
 	--vars-env "BOSH" > director.yml
 
-bosh-cli create-env \
-	--state director-state/director-state.json \
-	director.yml -l director-creds.yml
+bosh-cli create-env --state director-state.json director.yml -l director-creds.yml
 
 # todo cloud-config?
