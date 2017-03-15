@@ -11,6 +11,9 @@ function cp_artifacts {
 }
 trap cp_artifacts EXIT
 
+mv bosh-cli/bosh-cli-* /usr/local/bin/bosh-cli
+chmod +x /usr/local/bin/bosh-cli
+
 export AWS_ACCESS_KEY_ID=$BOSH_access_key_id
 export AWS_SECRET_ACCESS_KEY=$BOSH_secret_access_key
 export AWS_DEFAULT_REGION=$BOSH_region
