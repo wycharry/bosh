@@ -2,6 +2,12 @@
 
 set -e
 
+function fromEnvironment() {
+  local key="$1"
+  local environment=environment/metadata
+  cat $environment | jq -r "$key"
+}
+
 cat > bats.env <<EOF
 export BAT_DIRECTOR=$(fromEnvironment '.DirectorEIP')
 export BAT_DIRECTOR_USER="admin"
@@ -9,7 +15,7 @@ export BAT_DIRECTOR_PASSWORD="$(bosh-cli int director-state/director-creds.yml -
 export BAT_DIRECTOR_CA="$(bosh-cli int director-state/director-creds.yml --path=/director_ssl/ca)"
 export BAT_DNS_HOST=$(fromEnvironment '.DirectorEIP')
 
-export BAT_PRIVATE_KEY="$(bosh-cli int director-state/bosh.yml --path=/cloud_provider/ssh_tunnel/private_key)"
+export BAT_PRIVATE_KEY="$(bosh-cli int director-state/director.yml --path=/cloud_provider/ssh_tunnel/private_key)"
 export BAT_PRIVATE_KEY_USER="vcap"
 
 export BAT_INFRASTRUCTURE=aws
