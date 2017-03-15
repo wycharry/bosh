@@ -3,7 +3,7 @@
 source /etc/profile.d/chruby.sh
 chruby 2.1.7
 
-set -eu
+set -e
 
 function cp_artifacts {
   mv $HOME/.bosh director-state/
