@@ -48,7 +48,7 @@ bosh-cli interpolate bosh-deployment/bosh.yml \
   -v local_bosh_release=bosh-release/*.tgz \
   -v dns_recursor_ip=8.8.8.8 \
   -v director_name=bats-director \
-  --var-file private_key=$(aws ec2 create-key-pair --key-name $aws_keypair_name | jq --raw-output .KeyMaterial) \
+  --var-file private_key=<(aws ec2 create-key-pair --key-name $aws_keypair_name | jq --raw-output .KeyMaterial) \
 	--vars-env "BOSH" > director.yml
 
 bosh-cli create-env \
