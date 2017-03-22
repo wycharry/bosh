@@ -1337,6 +1337,81 @@ Error: Unable to render instance groups for deployment. Errors are:
         link_instance = director.instance('my_instance_group', '0', deployment_name: 'simple', include_credentials: false,  env: client_env)
         template = YAML.load(link_instance.read_job_template('http_proxy_with_requires', 'config/config.yml'))
         expect(template['links']['properties']['fibonacci']).to eq('fibonacci_value')
+
+        config_server_helper.put_value(prepend_namespace('fibonacci_placeholder'), 'recursion is the best')
+
+        deploy_simple_manifest(manifest_hash: manifest, include_credentials: false,  env: client_env)
+
+        link_instance = director.instance('my_instance_group', '0', deployment_name: 'simple', include_credentials: false,  env: client_env)
+        template = YAML.load(link_instance.read_job_template('http_proxy_with_requires', 'config/config.yml'))
+        expect(template['links']['properties']['fibonacci']).to eq('recursion is the best')
+      end
+
+      context 'when the consumer\'s job render fails on a subsequent deploy' do
+        let(:consumer_instance_group) do
+          job_spec = Bosh::Spec::Deployments.simple_job(
+            name: 'consumer_instance_group',
+            templates: [
+              {'name' => 'http_proxy_with_requires'},
+            ],
+            instances: 2,
+            azs: ['z1']
+          )
+          job_spec['properties'] = {'http_proxy_with_requires' => { 'listen_port' => '((some_port_number))' }}
+          job_spec
+        end
+
+        let(:provider_instance_group) do
+          job_spec = Bosh::Spec::Deployments.simple_job(
+            name: 'provider_instance_group',
+            templates: [
+              {'name' => provider_job_name},
+            ],
+            instances: 1,
+            azs: ['z1']
+          )
+          job_spec['properties'] = {'listen_port' => 9035, 'name_space' => {'fibonacci' => '((fibonacci_placeholder))'}}
+          job_spec
+        end
+        let(:manifest) do
+          manifest = Bosh::Spec::NetworkingManifest.deployment_manifest
+          manifest['jobs'] = [provider_instance_group, consumer_instance_group]
+          manifest
+        end
+
+        it 'should preserve variable id for jobs that haven\'t be updated' do
+          config_server_helper.put_value(prepend_namespace('fibonacci_placeholder'), 'leonardo')
+          config_server_helper.put_value(prepend_namespace('some_port_number'), '17')
+
+          deploy_simple_manifest(manifest_hash: manifest, include_credentials: false,  env: client_env)
+
+          link_instance = director.instance('consumer_instance_group', '0', deployment_name: 'simple', include_credentials: false,  env: client_env)
+          template = YAML.load(link_instance.read_job_template('http_proxy_with_requires', 'config/config.yml'))
+          expect(template['links']['properties']['fibonacci']).to eq('leonardo')
+
+          config_server_helper.put_value(prepend_namespace('fibonacci_placeholder'), 'Pisa')
+          config_server_helper.put_value(prepend_namespace('some_port_number'), '234')
+
+          consumer_instance_group['properties'][ 'fail_instance_index'] = 0
+          consumer_instance_group['properties'][ 'fail_on_job_start'] = true
+
+          _, exit_code = deploy_simple_manifest(manifest_hash: manifest, include_credentials: false,  env: client_env,
+                                 failure_expected: true, return_exit_code: true,)
+
+          expect(exit_code).to_not eq(0)
+
+          vms = bosh_runner.run("recreate consumer_instance_group", deployment_name: manifest['name'], include_credentials: false, env: client_env)
+
+          link_instance = director.instance('consumer_instance_group', '0', deployment_name: 'simple', include_credentials: false,  env: client_env)
+          template = YAML.load(link_instance.read_job_template('http_proxy_with_requires', 'config/config.yml'))
+          expect(template['property_listen_port']).to eq(234)
+          expect(template['links']['properties']['fibonacci']).to eq('Pisa')
+
+          link_instance = director.instance('consumer_instance_group', '1', deployment_name: 'simple', include_credentials: false,  env: client_env)
+          template = YAML.load(link_instance.read_job_template('http_proxy_with_requires', 'config/config.yml'))
+          expect(template['property_listen_port']).to eq(17)
+          expect(template['links']['properties']['fibonacci']).to eq('leonardo')
+        end
       end
 
       it 'does not log interpolated properties in deploy output and debug logs' do
