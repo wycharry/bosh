@@ -302,6 +302,12 @@ describe Bosh::Director::ConfigServer::VariablesInterpolator do
           expect(result).to eq(interpolated_links_spec)
           expect(result).to_not equal(interpolated_links_spec)
         end
+
+        context 'when an variable set is provided' do
+          it 'it calls interpolate with the provided variable_set' do
+            expect(true).to eq(false)
+          end
+        end
       end
 
       context 'when config server returns errors while interpolating properties' do
