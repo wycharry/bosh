@@ -45,11 +45,12 @@ bosh-cli interpolate bosh-deployment/bosh.yml \
   -o bosh-deployment/powerdns.yml \
   -o bosh-deployment/local-bosh-release.yml \
   --vars-store director-creds.yml \
-  -v local_bosh_release=$(realpath bosh-release/*.tgz) \
   -v dns_recursor_ip=8.8.8.8 \
   -v director_name=bats-director \
   --var-file private_key=<(aws ec2 create-key-pair --key-name $aws_keypair_name | jq --raw-output .KeyMaterial) \
 	--vars-env "BOSH" > director.yml
+
+  #  todo  -v local_bosh_release=$(realpath bosh-release/*.tgz) \
 
 bosh-cli create-env --state director-state.json director.yml -l director-creds.yml
 
