@@ -1,5 +1,3 @@
-# Copyright (c) 2009-2012 VMware, Inc.
-
 module Bosh::Director
   module CloudcheckHelper
     include CloudFactoryHelper
@@ -16,7 +14,7 @@ module Bosh::Director
 
     def reboot_vm(instance)
       cloud = cloud_factory.for_availability_zone(instance.availability_zone)
-      cloud.reboot_vm(instance.vm_cid)
+      cloud.reboot_vm(instance.active_vm.cid)
       begin
         agent_client(instance.credentials, instance.agent_id).wait_until_ready
       rescue Bosh::Director::RpcTimeout
@@ -28,7 +26,7 @@ module Bosh::Director
 
     def delete_vm(instance)
       # Paranoia: don't blindly delete VMs with persistent disk
-      disk_list = agent_timeout_guard(instance.vm_cid, instance.credentials, instance.agent_id) { |agent| agent.list_disk }
+      disk_list = agent_timeout_guard(instance.active_vm.cid, instance.credentials, instance.agent_id) { |agent| agent.list_disk }
       if disk_list.size != 0
         handler_error('VM has persistent disk attached')
       end
@@ -37,7 +35,9 @@ module Bosh::Director
     end
 
     def delete_vm_reference(instance)
-      instance.update(vm_cid: nil, agent_id: nil, trusted_certs_sha1: nil, credentials: nil)
+      vm_model = instance.active_vm
+      instance.update(active_vm: nil)
+      vm_model.delete
     end
 
     def delete_vm_from_cloud(instance_model)
@@ -62,7 +62,8 @@ module Bosh::Director
       vm_creator(job_renderer).create_for_instance_plan(
         instance_plan_to_create,
         Array(instance_model.managed_persistent_disk_cid),
-        instance_plan_to_create.tags
+        instance_plan_to_create.tags,
+        true
       )
 
       dns_manager = DnsManagerProvider.create

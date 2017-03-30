@@ -184,10 +184,51 @@ module Bosh
         allow(Config).to receive(:current_job).and_return(update_job)
         allow(Config.cloud).to receive(:delete_vm)
         allow(CloudFactory).to receive(:new).and_return(cloud_factory)
-        expect(cloud_factory).to receive(:for_availability_zone!).with(instance_model.availability_zone).at_least(:once).and_return(cloud)
+        allow(cloud_factory).to receive(:for_availability_zone!).with(instance_model.availability_zone).and_return(cloud)
+        allow(cloud_factory).to receive(:for_availability_zone).with(instance_model.availability_zone).and_return(cloud)
       end
 
-      it 'should create a vm' do
+      context 'with existing cloud config' do
+        let(:non_default_cloud_factory) { instance_double(CloudFactory) }
+        let(:stemcell_model_cpi) { Models::Stemcell.make(:cid => 'old-stemcell-id', name: 'fake-stemcell', version: '123', :cpi => 'something') }
+        let(:stemcell) do
+          stemcell_model
+          stemcell_model_cpi
+          stemcell = DeploymentPlan::Stemcell.parse({'name' => 'fake-stemcell', 'version' => '123'})
+          stemcell.add_stemcell_models
+          stemcell
+        end
+
+        before do
+          expect(non_default_cloud_factory).to receive(:for_availability_zone!).with(instance_model.availability_zone).at_least(:once).and_return(cloud)
+        end
+
+        it 'uses the outdated cloud config from the existing deployment' do
+          expect(CloudFactory).to receive(:create_from_deployment).and_return(non_default_cloud_factory)
+          expect(non_default_cloud_factory).to receive(:lookup_cpi_for_az).and_return 'something'
+          expect(cloud).to receive(:create_vm).with(
+            kind_of(String), 'old-stemcell-id', kind_of(Hash), network_settings, kind_of(Array), kind_of(Hash)
+          ).and_return('new-vm-cid')
+
+          subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags, true)
+        end
+
+        context 'when cloud-config/azs are not used' do
+          let(:instance_model) { Models::Instance.make(uuid: SecureRandom.uuid, index: 5, job: 'fake-job', deployment: deployment, availability_zone: '') }
+
+          it 'uses any cloud config if availability zones are not used, even though requested' do
+            expect(non_default_cloud_factory).to receive(:lookup_cpi_for_az).and_return ''
+            expect(CloudFactory).to receive(:create_from_deployment).and_return(non_default_cloud_factory)
+            expect(cloud).to receive(:create_vm).with(
+              kind_of(String), 'stemcell-id', kind_of(Hash), network_settings, kind_of(Array), kind_of(Hash)
+            ).and_return('new-vm-cid')
+
+            subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags, true)
+          end
+        end
+      end
+
+      it 'should create a vm and associate it with an instance' do
         expect(cloud).to receive(:create_vm).with(
           kind_of(String), 'stemcell-id', {'ram' => '2gb'}, network_settings, ['fake-disk-cid'], {'bosh' => {'group' => expected_group,
           'groups' => expected_groups
@@ -200,7 +241,10 @@ module Bosh
 
         expect {
           subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
-        }.to change { Models::Instance.where(vm_cid: 'new-vm-cid').count }
+        }.to change {
+          vm = Models::Vm.where(cid: 'new-vm-cid').first
+          vm.nil? ? nil : Models::Instance[vm.instance_id]
+        }
       end
 
       it 'should create vm for the instance plans' do
@@ -218,8 +262,10 @@ module Bosh
 
         expect {
           subject.create_for_instance_plans([instance_plan], deployment_plan.ip_provider, tags)
-        }.to change { Models::Instance.where(vm_cid: 'new-vm-cid').count }.
-                                   from(0).to(1)
+        }.to change {
+          vm = Models::Vm.where(cid: 'new-vm-cid').first
+          vm.nil? ? 0 : Models::Instance.where(id: vm.instance_id).count
+        }.from(0).to(1)
       end
 
       it 'should create vm for the instance plans with arbitrary metadata' do
@@ -236,7 +282,10 @@ module Bosh
 
         expect {
           subject.create_for_instance_plans([instance_plan], deployment_plan.ip_provider, tags)
-        }.to change { Models::Instance.where(vm_cid: 'new-vm-cid').count }.from(0).to(1)
+        }.to change {
+          vm = Models::Vm.where(cid: 'new-vm-cid').first
+          vm.nil? ? 0 : Models::Instance.where(id: vm.instance_id).count
+        }.from(0).to(1)
       end
 
       it 'should record events' do
@@ -277,6 +326,15 @@ module Bosh
         expect(event_2.error).to eq('Bosh::Clouds::VMCreationFailed')
       end
 
+      it 'deletes created VM from cloud on DB failure' do
+        expect(cloud).to receive(:create_vm).and_return('vm-cid')
+        expect(Bosh::Director::Models::Vm).to receive(:create).and_raise('Bad DB. Bad.')
+        expect(vm_deleter).to receive(:delete_vm_by_cid).with('vm-cid')
+        expect {
+          subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
+        }.to raise_error ('Bad DB. Bad.')
+      end
+
       it 'flushes the ARP cache' do
         allow(cloud).to receive(:create_vm).with(
             kind_of(String), 'stemcell-id', {'ram' => '2gb'}, network_settings.merge(extra_ip), ['fake-disk-cid'], {'bosh' =>{'group' => expected_group, 'groups' => expected_groups}}
@@ -287,7 +345,7 @@ module Bosh
         )
 
         subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
-        expect(agent_broadcaster).to have_received(:delete_arp_entries).with(instance_model.vm_cid, ['192.168.1.3'])
+        expect(agent_broadcaster).to have_received(:delete_arp_entries).with(instance_model.active_vm.cid, ['192.168.1.3'])
       end
 
       it 'does not flush the arp cache when arp_flush set to false' do
@@ -302,7 +360,7 @@ module Bosh
         )
 
         subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
-        expect(agent_broadcaster).not_to have_received(:delete_arp_entries).with(instance_model.vm_cid, ['192.168.1.3'])
+        expect(agent_broadcaster).not_to have_received(:delete_arp_entries).with(instance_model.active_vm.cid, ['192.168.1.3'])
 
       end
 
@@ -355,8 +413,10 @@ module Bosh
 
         subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
 
-        instance_with_new_vm = Models::Instance.find(vm_cid: 'new-vm-cid')
+        new_vm = Models::Vm.find(cid: 'new-vm-cid')
+        instance_with_new_vm = Models::Instance.find(active_vm_id: new_vm.id)
         expect(instance_with_new_vm).not_to be_nil
+        expect(instance_with_new_vm.credentials).not_to be_nil
 
         expect(Base64.strict_decode64(instance_with_new_vm.credentials['crypt_key'])).to be_kind_of(String)
         expect(Base64.strict_decode64(instance_with_new_vm.credentials['sign_key'])).to be_kind_of(String)
@@ -376,7 +436,9 @@ module Bosh
 
         expect {
           subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'], tags)
-        }.to change { Models::Instance.where(vm_cid: 'fake-vm-cid').count }.from(0).to(1)
+        }.to change {
+          vm = Models::Vm.where(cid: 'fake-vm-cid').first
+          vm.nil? ? 0 : Models::Instance.where(active_vm_id: vm.id).count }.from(0).to(1)
       end
 
       it 'should not retry creating a VM if it is told it is not a retryable error' do

@@ -1,5 +1,3 @@
-# Copyright (c) 2009-2012 VMware, Inc.
-
 module Bosh::Director
   include Api::Http
 
@@ -94,6 +92,7 @@ module Bosh::Director
   StemcellAliasAlreadyExists = err(50005)
   StemcellBothNameAndOS = err(50006)
   StemcellSha1DoesNotMatch = err(50007)
+  StemcellNotSupported = err(50008)
 
   PackageInvalidArchive = err(60000)
   PackageMissingSourceCode = err(60001)
@@ -289,10 +288,11 @@ module Bosh::Director
   # Addons
   RuntimeAmbiguousReleaseSpec = err(530000)
   RuntimeInvalidReleaseVersion = err(530001)
-  RuntimeReleaseNotListedInReleases = err(530002)
+  AddonReleaseNotListedInReleases = err(530002)
   RuntimeInvalidDeploymentRelease = err(530003)
-  RuntimeIncompleteFilterJobSection = err(530004)
-  RuntimeIncompleteFilterStemcellSection = err(530005)
+  AddonIncompleteFilterJobSection = err(530004)
+  AddonIncompleteFilterStemcellSection = err(530005)
+  AddonDeploymentFilterNotAllowed = err(530006)
 
   # Config server errors
   ConfigServerFetchError = err(540001)
@@ -302,6 +302,7 @@ module Bosh::Director
   ConfigServerGenerationError = err(540005)
   ConfigServerDeploymentNameMissing = err(540006)
   ConfigServerIncorrectPlaceholderPlacement = err(540007)
+  ConfigServerInconsistentVariableState = err(540008)
 
   # CPI config
   CpiDuplicateName = err(550000)

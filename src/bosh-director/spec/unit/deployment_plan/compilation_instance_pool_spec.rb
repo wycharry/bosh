@@ -155,7 +155,7 @@ module Bosh::Director
         action
 
         compilation_instance = Models::Instance.find(uuid: 'instance-uuid-1')
-        expect(compilation_instance.trusted_certs_sha1).to eq(::Digest::SHA1.hexdigest(trusted_certs))
+        expect(compilation_instance.active_vm.trusted_certs_sha1).to eq(::Digest::SHA1.hexdigest(trusted_certs))
       end
 
       it 'should record creation event' do
@@ -165,7 +165,7 @@ module Bosh::Director
         }.to change {
           Bosh::Director::Models::Event.count }.from(0).to(4)
 
-        event_1 = Bosh::Director::Models::Event.first
+        event_1 = Bosh::Director::Models::Event.order(:id).first
         expect(event_1.user).to eq('user')
         expect(event_1.action).to eq('create')
         expect(event_1.object_type).to eq('instance')

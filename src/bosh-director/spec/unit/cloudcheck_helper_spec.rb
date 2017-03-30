@@ -20,15 +20,17 @@ module Bosh::Director
     end
 
     let(:instance) do
-      Models::Instance.make(
+      instance = Models::Instance.make(
         deployment: deployment_model,
         job: 'mysql_node',
         index: 0,
-        vm_cid: 'vm-cid',
         spec: spec,
         availability_zone: 'az1'
       )
+      instance.add_vm(vm)
+      instance.update(active_vm: vm)
     end
+    let(:vm) { Models::Vm.make }
     let(:spec) { {'apply' => 'spec', 'env' => {'vm_env' => 'json'}} }
     let(:deployment_model) { Models::Deployment.make(manifest: YAML.dump(Bosh::Spec::Deployments.legacy_manifest)) }
     let(:test_problem_handler) { ProblemHandlers::Base.create_by_type(:test_problem_handler, instance.uuid, {}) }
@@ -61,7 +63,7 @@ module Bosh::Director
       let(:cloud_factory) { instance_double(CloudFactory) }
       before do
         allow(CloudFactory).to receive(:new).and_return(cloud_factory)
-        expect(cloud).to receive(:reboot_vm).with(instance.vm_cid)
+        expect(cloud).to receive(:reboot_vm).with(vm.cid)
         expect(cloud_factory).to receive(:for_availability_zone).with(instance.availability_zone).and_return(cloud)
       end
 
@@ -175,10 +177,11 @@ module Bosh::Director
               expect(instance.vm_env).to eq({'key1' => 'value1'})
             end
 
-            expect(vm_creator).to receive(:create_for_instance_plan) do |instance_plan|
+            expect(vm_creator).to receive(:create_for_instance_plan) do |instance_plan,_,_,use_existing|
               expect(instance_plan.network_settings_hash).to eq({'ip' => '192.1.3.4'})
               expect(instance_plan.instance.cloud_properties).to eq({'foo' => 'bar'})
               expect(instance_plan.instance.env).to eq({'key1' => 'value1'})
+              expect(use_existing).to eq(true)
             end
 
             expect(rendered_templates_persister).to receive(:persist)

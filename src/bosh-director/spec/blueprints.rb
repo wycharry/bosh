@@ -1,4 +1,3 @@
-# Copyright (c) 2009-2012 VMware, Inc.
 require_relative '../../spec/support/deployments'
 
 Sham.define do
@@ -96,8 +95,6 @@ module Bosh::Director::Models
     job         { Sham.job }
     index       { Sham.index }
     state       { 'started' }
-    vm_cid      { Sham.vm_cid }
-    agent_id    { Sham.agent_id }
     uuid        { Sham.uuid }
     variable_set { VariableSet.make }
   end
@@ -128,7 +125,12 @@ module Bosh::Director::Models
   PersistentDisk.blueprint do
     active      { true }
     disk_cid    { Sham.disk_cid }
-    instance    { Instance.make }
+    instance    do
+      vm = Vm.make
+      is = Instance.make
+      is.add_vm vm
+      is.update(active_vm: vm)
+    end
   end
 
   Snapshot.blueprint do
@@ -178,8 +180,8 @@ module Bosh::Director::Models
 
   DeploymentProperty.blueprint do
     deployment { Deployment.make }
-    name { Sham.name }
-    value { "value" }
+    name       { Sham.name }
+    value      { "value" }
   end
 
   Lock.blueprint do
@@ -189,8 +191,8 @@ module Bosh::Director::Models
   end
 
   LogBundle.blueprint do
-    timestamp { Time.now }
-    blobstore_id { Sham.blobstore_id }
+    timestamp     { Time.now }
+    blobstore_id  { Sham.blobstore_id }
   end
 
   Event.blueprint do
@@ -206,7 +208,7 @@ module Bosh::Director::Models
   end
 
   ErrandRun.blueprint do
-    instance_id    { Instance.make.id }
+    instance_id { Instance.make.id }
     successful  { false }
   end
 
@@ -227,6 +229,11 @@ module Bosh::Director::Models
   }
 
   Variable.blueprint {}
+
+  Vm.blueprint do
+    cid      { Sham.vm_cid }
+    agent_id { Sham.agent_id }
+  end
 
   module Dns
     Domain.blueprint do

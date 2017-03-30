@@ -46,22 +46,26 @@ module Bosh::Director
       end
     end
 
-    def create_for_instance_plan(instance_plan, disks, tags)
+    def create_for_instance_plan(instance_plan, disks, tags, use_existing=false)
       instance = instance_plan.instance
+
+      factory, stemcell_cid = choose_factory_and_stemcell_cid(instance_plan, use_existing)
+
       instance_model = instance.model
       @logger.info('Creating VM')
 
       create(
         instance,
-        instance.stemcell_cid,
+        stemcell_cid,
         instance.cloud_properties,
         instance_plan.network_settings_hash,
         disks,
         instance.env,
+        factory
       )
 
       begin
-        MetadataUpdater.build.update_vm_metadata(instance_model, tags)
+        MetadataUpdater.build.update_vm_metadata(instance_model, tags, factory)
         agent_client = AgentClient.with_vm_credentials_and_agent_id(instance_model.credentials, instance_model.agent_id)
         agent_client.wait_until_ready
 
@@ -70,7 +74,7 @@ module Bosh::Director
             network['ip']
           end.compact
 
-          @agent_broadcaster.delete_arp_entries(instance_model.vm_cid, ip_addresses)
+          @agent_broadcaster.delete_arp_entries(instance_model.active_vm.cid, ip_addresses)
         end
 
         @disk_manager.attach_disks_if_needed(instance_plan)
@@ -78,7 +82,7 @@ module Bosh::Director
         instance.update_instance_settings
         instance.update_cloud_properties!
       rescue Exception => e
-        @logger.error("Failed to create/contact VM #{instance_model.vm_cid}: #{e.inspect}")
+        @logger.error("Failed to create/contact VM #{instance_model.active_vm.cid}: #{e.inspect}")
         if Config.keep_unreachable_vms
           @logger.info('Keeping the VM for debugging')
         else
@@ -120,7 +124,24 @@ module Bosh::Director
       end
     end
 
-    def create(instance, stemcell_cid, cloud_properties, network_settings, disks, env)
+    def choose_factory_and_stemcell_cid(instance_plan, use_existing)
+      if use_existing
+        factory = CloudFactory.create_from_deployment(instance_plan.existing_instance.deployment)
+
+        return cloud_factory, instance_plan.instance.stemcell_cid unless instance_plan.existing_instance.availability_zone
+
+        stemcell = instance_plan.instance.stemcell
+        cpi = factory.lookup_cpi_for_az(instance_plan.existing_instance.availability_zone) || ''
+        stemcell_cid = stemcell.models.find{ |model| model.cpi == cpi }.cid
+      else
+        factory = cloud_factory
+        stemcell_cid = instance_plan.instance.stemcell_cid
+      end
+
+      return factory, stemcell_cid
+    end
+
+    def create(instance, stemcell_cid, cloud_properties, network_settings, disks, env, factory)
       instance_model = instance.model
       deployment_name = instance_model.deployment.name
       parent_id = add_event(deployment_name, instance_model.name, 'create')
@@ -129,7 +150,8 @@ module Bosh::Director
       config_server_client = @config_server_client_factory.create_client
       env = config_server_client.interpolate(Bosh::Common::DeepCopy.copy(env), deployment_name, instance.variable_set)
 
-      options = {:agent_id => agent_id}
+      vm_options = {instance: instance_model, agent_id: agent_id}
+      options = {}
 
       if Config.encryption?
         credentials = generate_agent_credentials
@@ -160,7 +182,7 @@ module Bosh::Director
 
       count = 0
       begin
-        cloud = cloud_factory.for_availability_zone!(instance_model.availability_zone)
+        cloud = factory.for_availability_zone!(instance_model.availability_zone)
         vm_cid = cloud.create_vm(agent_id, stemcell_cid, cloud_properties, network_settings, disks, env)
       rescue Bosh::Clouds::VMCreationFailed => e
         count += 1
@@ -169,14 +191,19 @@ module Bosh::Director
         raise e
       end
 
-      options[:vm_cid] = vm_cid
+      vm_options[:cid] = vm_cid
+      vm_model = Models::Vm.create(vm_options)
+      vm_model.save
+
+      options[:active_vm_id] = vm_model.id
+      instance_model.refresh
+      instance_model.active_vm_id = vm_model.id
       instance_model.update(options)
     rescue => e
       @logger.error("error creating vm: #{e.message}")
       if vm_cid
         parent_id = add_event(deployment_name, instance_model.name, 'delete', vm_cid)
-        instance_model.vm_cid = vm_cid
-        @vm_deleter.delete_vm(instance_model)
+        @vm_deleter.delete_vm_by_cid(vm_cid)
         add_event(deployment_name, instance_model.name, 'delete', vm_cid, parent_id)
       end
       raise e
