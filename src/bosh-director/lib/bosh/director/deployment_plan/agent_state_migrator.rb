@@ -1,8 +1,7 @@
 module Bosh::Director
   module DeploymentPlan
     class AgentStateMigrator
-      def initialize(deployment_plan, logger)
-        @deployment_plan = deployment_plan
+      def initialize(logger)
         @logger = logger
       end
 
@@ -24,9 +23,9 @@ module Bosh::Director
 
       def verify_state(instance, state)
         unless state.kind_of?(Hash)
-          @logger.error("Invalid state for '#{instance.active_vm.cid}': #{state.pretty_inspect}")
+          @logger.error("Invalid state for '#{instance.vm_cid}': #{state.pretty_inspect}")
           raise AgentInvalidStateFormat,
-            "VM '#{instance.active_vm.cid}' returns invalid state: " +
+            "VM '#{instance.vm_cid}' returns invalid state: " +
               "expected Hash, got #{state.class}"
         end
       end

@@ -5,12 +5,17 @@ module Bosh::Director
     subject(:job) { described_class.new('fake-dep-name', 'fake-errand-name', keep_alive, when_changed) }
     let(:keep_alive) { false }
     let(:when_changed) { false }
+    let(:task_result) { Bosh::Director::TaskDBWriter.new(:result_output, task.id) }
+    let(:task_writer) {Bosh::Director::TaskDBWriter.new(:event_output, task.id)}
+    let(:event_log) {Bosh::Director::EventLog::Log.new(task_writer)}
 
     before do
       allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore)
       allow(Config).to receive(:record_events).and_return(true)
       allow(job).to receive(:event_manager).and_return(event_manager)
       allow(Config).to receive(:current_job).and_return(job)
+      allow(Config).to receive(:event_log).and_return(event_log)
+      allow(Config).to receive(:result).and_return(task_result)
     end
 
     let(:task) { Bosh::Director::Models::Task.make(:id => 42, :username => 'user') }
@@ -30,7 +35,7 @@ module Bosh::Director
       }
     end
 
-    let(:errand_result) {Errand::Result.from_agent_task_results(agent_run_errand_result, nil)}
+    let(:errand_result) { Errand::Result.from_agent_task_results(agent_run_errand_result, nil) }
 
     describe 'DJ job class expectations' do
       let(:job_type) { :run_errand }
@@ -50,28 +55,33 @@ module Bosh::Director
 
         before do
           allow(DeploymentPlan::PlannerFactory).to receive(:new).
-              and_return(instance_double(
+            and_return(instance_double(
               'Bosh::Director::DeploymentPlan::PlannerFactory',
-              create_from_manifest: planner,
+              create_from_model: planner,
             ))
           allow(job).to receive(:task_id).and_return(task.id)
+
+          allow(DeploymentPlan::Assembler).to receive(:create).and_return(assembler)
         end
+
+        let(:assembler) { instance_double(DeploymentPlan::Assembler, bind_models: nil) }
+
         let(:planner) do
           ip_repo = DeploymentPlan::DatabaseIpRepo.new(logger)
           ip_provider = DeploymentPlan::IpProvider.new(ip_repo, {}, logger)
 
           instance_double(
             'Bosh::Director::DeploymentPlan::Planner',
-            bind_models: nil,
-            validate_packages: nil,
-            compile_packages: nil,
             ip_provider: ip_provider,
             job_renderer: job_renderer,
           )
         end
-        let(:job_renderer) { JobRenderer.create.tap {|jr| allow(jr).to receive(:render_job_instances) } }
+        let(:compile_packages_step) { instance_double(DeploymentPlan::Steps::PackageCompileStep, perform: nil) }
+        let(:job_renderer) { JobRenderer.create.tap { |jr| allow(jr).to receive(:render_job_instances) } }
 
         let(:cloud_config) { Models::CloudConfig.make }
+
+        before { allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:create).with(planner).and_return(compile_packages_step) }
 
         context 'when job representing an errand exists' do
           let(:deployment_job) { instance_double('Bosh::Director::DeploymentPlan::InstanceGroup', name: 'fake-errand-name', needed_instance_plans: []) }
@@ -86,10 +96,8 @@ module Bosh::Director
               let(:instance_model) { Models::Instance.make(job: 'foo-job', uuid: 'instance_id') }
               let(:instance) { instance_double('Bosh::Director::DeploymentPlan::Instance', model: instance_model) }
 
-              before { allow(Config).to receive(:result).with(no_args).and_return(result_file) }
-              let(:result_file) { instance_double('Bosh::Director::TaskResultFile') }
+              before { allow(Lock).to receive(:new).with('lock:deployment:fake-dep-name', {timeout: 10, deployment_name: 'fake-dep-name'}).and_return(lock) }
 
-              before { allow(Lock).to receive(:new).with('lock:deployment:fake-dep-name', { timeout: 10, deployment_name: 'fake-dep-name' }).and_return(lock) }
               let(:lock) { instance_double('Bosh::Director::Lock') }
 
               before { allow(lock).to receive(:lock).and_yield }
@@ -128,7 +136,7 @@ module Bosh::Director
 
               before do
                 allow(Errand::Runner).to receive(:new).
-                  with(instance, 'fake-errand-name', result_file, be_a(Api::InstanceManager), be_a(Bosh::Director::LogsFetcher)).
+                  with(instance, 'fake-errand-name', task_result, be_a(Api::InstanceManager), be_a(Bosh::Director::LogsFetcher)).
                   and_return(runner)
               end
               let(:runner) { instance_double('Bosh::Director::Errand::Runner') }
@@ -139,8 +147,8 @@ module Bosh::Director
               end
 
               it 'binds models, validates packages, compiles packages' do
-                expect(planner).to receive(:bind_models)
-                expect(planner).to receive(:compile_packages)
+                expect(assembler).to receive(:bind_models)
+                expect(compile_packages_step).to receive(:perform)
 
                 subject.perform
               end
@@ -307,14 +315,14 @@ module Bosh::Director
                     let(:errand_success) { true }
 
                     context 'when the errand configuration has NOT changed' do
-                      let(:successful_configuration_hash) { 'last_successful_config'}
+                      let(:successful_configuration_hash) { 'last_successful_config' }
                       let(:successful_packages_spec) { {'packages' => 'last_successful_packages'} }
 
                       before do
                         allow(instance).to receive(:current_packages).and_return(successful_packages_spec)
                         allow(instance).to receive(:configuration_hash).and_return(successful_configuration_hash)
                       end
-                      let(:instance_plan){ instance_double(DeploymentPlan::InstancePlan, instance: instance) }
+                      let(:instance_plan) { instance_double(DeploymentPlan::InstancePlan, instance: instance) }
 
                       it 'does not run the errand and does not output ' do
                         expect(job_manager).to_not receive(:create_missing_vms)
@@ -326,7 +334,7 @@ module Bosh::Director
                     end
 
                     context 'when the errand packages has changed' do
-                      let(:successful_configuration_hash) { 'last_successful_config'}
+                      let(:successful_configuration_hash) { 'last_successful_config' }
                       let(:successful_packages_spec) { 'last_successful_packages' }
 
                       let(:instance_plan) { instance_double(DeploymentPlan::InstancePlan, instance: instance) }
@@ -344,7 +352,7 @@ module Bosh::Director
                     end
 
                     context 'when the errand configuration has changed' do
-                      let(:successful_configuration_hash) { 'last_successful_config'}
+                      let(:successful_configuration_hash) { 'last_successful_config' }
                       let(:successful_packages_spec) { 'last_successful_packages' }
 
                       let(:instance_plan) { instance_double(DeploymentPlan::InstancePlan, instance: instance) }
@@ -365,7 +373,7 @@ module Bosh::Director
                   context 'when errand failed on the previous run' do
                     let(:instance_plan) { instance_double(DeploymentPlan::InstancePlan, instance: instance) }
                     let(:errand_success) { false }
-                    let(:successful_configuration_hash) { ''}
+                    let(:successful_configuration_hash) { '' }
                     let(:successful_packages_spec) { '' }
 
 
@@ -400,16 +408,16 @@ module Bosh::Director
                 end
 
                 context 'when errand has never been run before' do
-                  let(:instance_plan){ instance_double(DeploymentPlan::InstancePlan, instance: instance) }
+                  let(:instance_plan) { instance_double(DeploymentPlan::InstancePlan, instance: instance) }
 
                   it 'always runs the errand' do
-                      allow(instance).to receive(:current_packages).and_return({'packages' => 'successful_packages_spec'})
-                      allow(instance).to receive(:configuration_hash).and_return('successful_configuration_hash')
+                    allow(instance).to receive(:current_packages).and_return({'packages' => 'successful_packages_spec'})
+                    allow(instance).to receive(:configuration_hash).and_return('successful_configuration_hash')
 
-                      expect(job_manager).to receive(:create_missing_vms)
-                      expect(runner).to receive(:run)
+                    expect(job_manager).to receive(:create_missing_vms)
+                    expect(runner).to receive(:run)
 
-                      subject.perform
+                    subject.perform
                   end
                 end
               end

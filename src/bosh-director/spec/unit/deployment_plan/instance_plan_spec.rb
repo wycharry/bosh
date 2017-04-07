@@ -17,7 +17,8 @@ module Bosh::Director::DeploymentPlan
         variable_set: variable_set_model
       )
       instance_model.add_vm vm_model
-      instance_model.update(active_vm: vm_model)
+      instance_model.active_vm = vm_model
+      instance_model
     end
     let(:spec) do
       { 'vm_type' =>
@@ -65,7 +66,7 @@ module Bosh::Director::DeploymentPlan
     let(:deployment_plan) do
       planner_factory = PlannerFactory.create(logger)
       plan = planner_factory.create_from_model(deployment_model)
-      plan.bind_models
+      Assembler.create(plan).bind_models
       plan
     end
 

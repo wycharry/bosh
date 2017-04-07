@@ -6,9 +6,13 @@ module Bosh::Director
     include IpUtil
     include LegacyDeploymentHelper
 
-    def initialize(deployment_plan, stemcell_manager, dns_manager, logger)
+    def self.create(deployment_plan)
+      new(deployment_plan, Api::StemcellManager.new, DnsManagerProvider.create)
+    end
+
+    def initialize(deployment_plan, stemcell_manager, dns_manager)
       @deployment_plan = deployment_plan
-      @logger = logger
+      @logger = Config.logger
       @stemcell_manager = stemcell_manager
       @dns_manager = dns_manager
     end
@@ -18,8 +22,9 @@ module Bosh::Director
 
       should_bind_links = options.fetch(:should_bind_links, true)
       should_bind_properties = options.fetch(:should_bind_properties, true)
-      fix = options.fetch(:fix, false)
-      tags = options.fetch(:tags, {})
+      deployment_options = @deployment_plan.deployment_wide_options
+      fix = deployment_options.fetch(:fix, false)
+      tags = deployment_options.fetch(:tags, {})
 
       bind_releases
 
@@ -81,7 +86,7 @@ module Bosh::Director
               with_thread_name("binding agent state for (#{existing_instance}") do
                 # getting current state to obtain IP of dynamic networks
                 begin
-                  state = DeploymentPlan::AgentStateMigrator.new(@deployment_plan, @logger).get_state(existing_instance)
+                  state = DeploymentPlan::AgentStateMigrator.new(@logger).get_state(existing_instance)
                 rescue Bosh::Director::RpcTimeout => e
                   if fix
                     state = {'job_state' => 'unresponsive'}

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-module Bosh::Director::DeploymentPlan
+module Bosh::Director::DeploymentPlan::Steps
   describe 'deployment prepare & update', truncation: true, :if => ENV.fetch('DB', 'sqlite') != 'sqlite' do
     before do
       release = Bosh::Director::Models::Release.make(name: 'fake-release')
@@ -26,10 +26,10 @@ module Bosh::Director::DeploymentPlan
     end
 
     let(:agent_client) { instance_double('Bosh::Director::AgentClient') }
-    let(:update_step) { Steps::UpdateStep.new(base_job, deployment_plan, multi_job_updater) }
+    let(:update_step) { UpdateStep.new(base_job, deployment_plan, multi_job_updater) }
 
     let(:base_job) { Bosh::Director::Jobs::BaseJob.new }
-    let(:assembler) { Assembler.new(deployment_plan, nil, nil, logger) }
+    let(:assembler) { Assembler.new(deployment_plan, nil, nil) }
     let(:cloud_config) { nil }
     let(:runtime_config) { nil }
 
@@ -37,83 +37,85 @@ module Bosh::Director::DeploymentPlan
       planner_factory = Bosh::Director::DeploymentPlan::PlannerFactory.create(logger)
       manifest = Bosh::Director::Manifest.new(deployment_manifest, deployment_manifest, nil, nil, nil)
       deployment_plan = planner_factory.create_from_manifest(manifest, cloud_config, runtime_config, {})
-      deployment_plan.bind_models
+      Bosh::Director::DeploymentPlan::Assembler.create(deployment_plan).bind_models
       deployment_plan
     end
     let(:deployment_manifest) do
       {
-          'name' => 'fake-deployment',
-          'jobs' => [
+        'name' => 'fake-deployment',
+        'jobs' => [
+          {
+            'name' => 'fake-job',
+            'templates' => [
               {
-                  'name' => 'fake-job',
-                  'templates' => [
-                      {
-                          'name' => 'fake-template',
-                          'release' => 'fake-release',
-                      }
-                  ],
-                  'resource_pool' => 'fake-resource-pool',
-                  'instances' => 1,
-                  'networks' => [
-                      {
-                          'name' => 'fake-network',
-                          'static_ips' => ['127.0.0.1']
-                      }
-                  ],
+                'name' => 'fake-template',
+                'release' => 'fake-release',
               }
-          ],
-          'resource_pools' => [
+            ],
+            'resource_pool' => 'fake-resource-pool',
+            'instances' => 1,
+            'networks' => [
               {
-                  'name' => 'fake-resource-pool',
-                  'size' => 1,
-                  'cloud_properties' => {},
-                  'stemcell' => {
-                      'name' => 'fake-stemcell',
-                      'version' => 'fake-stemcell-version',
-                  },
-                  'network' => 'fake-network',
-                  'jobs' => []
+                'name' => 'fake-network',
+                'static_ips' => ['127.0.0.1']
               }
-          ],
-          'networks' => [
+            ],
+          }
+        ],
+        'resource_pools' => [
+          {
+            'name' => 'fake-resource-pool',
+            'size' => 1,
+            'cloud_properties' => {},
+            'stemcell' => {
+              'name' => 'fake-stemcell',
+              'version' => 'fake-stemcell-version',
+            },
+            'network' => 'fake-network',
+            'jobs' => []
+          }
+        ],
+        'networks' => [
+          {
+            'name' => 'fake-network',
+            'type' => 'manual',
+            'cloud_properties' => {},
+            'subnets' => [
               {
-                  'name' => 'fake-network',
-                  'type' => 'manual',
-                  'cloud_properties' => {},
-                  'subnets' => [
-                      {
-                          'name' => 'fake-subnet',
-                          'range' => '127.0.0.0/20',
-                          'gateway' => '127.0.0.2',
-                          'cloud_properties' => {},
-                          'static' => ['127.0.0.1'],
-                      }
-                  ]
+                'name' => 'fake-subnet',
+                'range' => '127.0.0.0/20',
+                'gateway' => '127.0.0.2',
+                'cloud_properties' => {},
+                'static' => ['127.0.0.1'],
               }
-          ],
-          'releases' => [
-              {
-                  'name' => 'fake-release',
-                  'version' => '1.0.0',
-              }
-          ],
-          'compilation' => {
-              'workers' => 1,
-              'network' => 'fake-network',
-              'cloud_properties' => {},
-          },
-          'update' => {
-              'canaries' => 1,
-              'max_in_flight' => 1,
-              'canary_watch_time' => 1,
-              'update_watch_time' => 1,
-          },
+            ]
+          }
+        ],
+        'releases' => [
+          {
+            'name' => 'fake-release',
+            'version' => '1.0.0',
+          }
+        ],
+        'compilation' => {
+          'workers' => 1,
+          'network' => 'fake-network',
+          'cloud_properties' => {},
+        },
+        'update' => {
+          'canaries' => 1,
+          'max_in_flight' => 1,
+          'canary_watch_time' => 1,
+          'update_watch_time' => 1,
+        },
       }
     end
 
     let(:cloud) { Bosh::Director::Config.cloud }
 
     let(:task) { Bosh::Director::Models::Task.make(:id => 42, :username => 'user') }
+    let(:task_writer) { Bosh::Director::TaskDBWriter.new(:event_output, task.id) }
+    let(:event_log) { Bosh::Director::EventLog::Log.new(task_writer) }
     before do
       Bosh::Director::Models::VariableSet.make(deployment: deployment)
       allow(Bosh::Director::Config).to receive(:dns_enabled?).and_return(false)
@@ -121,6 +123,7 @@ module Bosh::Director::DeploymentPlan
       allow(Bosh::Director::Config).to receive(:current_job).and_return(base_job)
       allow(Bosh::Director::Config).to receive(:record_events).and_return(true)
       allow(Bosh::Director::Config).to receive(:name).and_return('fake-director-name')
+      allow(Bosh::Director::Config).to receive(:event_log).and_return(event_log)
     end
 
     before { allow(Bosh::Director::App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore) }
@@ -133,7 +136,8 @@ module Bosh::Director::DeploymentPlan
       let(:instance_model) do
         instance = Bosh::Director::Models::Instance.make(deployment: deployment)
         instance.add_vm(vm_model)
-        instance.update(active_vm: vm_model)
+        instance.active_vm = vm_model
+        instance
       end
       context 'the agent on the existing VM has the requested static ip but no job instance assigned (due to deploy failure)' do
         context 'the new deployment manifest specifies 1 instance of a job with a static ip' do
@@ -144,15 +148,15 @@ module Bosh::Director::DeploymentPlan
           it 'deletes the existing VM, and creates a new VM with the same IP' do
             expect(cloud).to receive(:delete_vm).ordered
             expect(cloud).to receive(:create_vm)
-                .with(anything, stemcell.cid, anything, {'fake-network' => hash_including('ip' => '127.0.0.1')}, anything, anything)
-                .and_return('vm-cid-2')
-                .ordered
+                               .with(anything, stemcell.cid, anything, {'fake-network' => hash_including('ip' => '127.0.0.1')}, anything, anything)
+                               .and_return('vm-cid-2')
+                               .ordered
 
             update_step.perform
             expect(Bosh::Director::Models::Vm.find(cid: 'vm-cid-1')).to be_nil
             vm2 = Bosh::Director::Models::Vm.find(cid: 'vm-cid-2')
             expect(vm2).not_to be_nil
-            expect(Bosh::Director::Models::Instance.find(active_vm_id: vm2.id)).not_to be_nil
+            expect(Bosh::Director::Models::Instance.all.select { |i| i.active_vm = vm2 }.first).not_to be_nil
 
             expect(agent_client).to have_received(:drain).with('shutdown', {})
           end
@@ -163,11 +167,11 @@ module Bosh::Director::DeploymentPlan
     context 'when the director database contains no instances' do
       let(:multi_job_updater) do
         Bosh::Director::DeploymentPlan::SerialMultiJobUpdater.new(
-            Bosh::Director::JobUpdaterFactory.new(logger, deployment_plan.job_renderer)
+          Bosh::Director::JobUpdaterFactory.new(logger, deployment_plan.job_renderer)
         )
       end
       before do
-        allow(agent_client).to receive(:get_state).and_return({ 'job_state' => 'running' })
+        allow(agent_client).to receive(:get_state).and_return({'job_state' => 'running'})
         allow(agent_client).to receive(:prepare)
         allow(agent_client).to receive(:run_script)
         allow(agent_client).to receive(:start)
@@ -178,7 +182,7 @@ module Bosh::Director::DeploymentPlan
         update_step.perform
 
         vm = Bosh::Director::Models::Vm.find(cid: 'vm-cid-2')
-        expect(Bosh::Director::Models::Instance.find(active_vm_id: vm.id).spec['lifecycle']).to eq('service')
+        expect(Bosh::Director::Models::Instance.all.select { |i| i.active_vm = vm }.first.spec['lifecycle']).to eq('service')
       end
     end
   end

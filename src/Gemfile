@@ -51,7 +51,6 @@ group :development, :test do
   gem 'sinatra-contrib'
   gem 'codeclimate-test-reporter', require: false
   gem 'vcr'
-  gem 'pry'
 
   gem 'eventmachine', '~>1.2'
 

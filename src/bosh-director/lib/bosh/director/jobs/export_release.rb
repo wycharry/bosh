@@ -57,17 +57,18 @@ module Bosh::Director
 
         export_release_job = create_job_with_all_the_templates_so_everything_compiles(release_version_model, release, deployment_plan_stemcell)
         planner.add_instance_group(export_release_job)
-        planner.bind_models({:should_bind_links => false, :should_bind_properties => false})
+        assembler = DeploymentPlan::Assembler.create(planner)
+        assembler.bind_models({:should_bind_links => false, :should_bind_properties => false})
 
         lock_timeout = 15 * 60 # 15 minutes
 
         with_deployment_lock(@deployment_name, :timeout => lock_timeout) do
           with_release_lock(@release_name, :timeout => lock_timeout) do
             with_stemcell_lock(deployment_plan_stemcell.name, deployment_plan_stemcell.version, :timeout => lock_timeout) do
-              planner.compile_packages
+              compile_step(planner).perform
 
               tarball_state = create_tarball(release_version_model, deployment_plan_stemcell)
-              result_file.write(tarball_state.to_json + "\n")
+              task_result.write(tarball_state.to_json + "\n")
             end
           end
         end
@@ -75,6 +76,10 @@ module Bosh::Director
       end
 
       private
+
+      def compile_step(deployment_plan)
+        DeploymentPlan::Steps::PackageCompileStep.create(deployment_plan)
+      end
 
       def deployment_manifest_has_release?(manifest)
         deployment_manifest = YAML.load(manifest)

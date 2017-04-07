@@ -9,21 +9,29 @@ module Bosh::Director
     let(:multi_digest) { instance_double(Digest::MultiDigest) }
     let(:sha2) { nil }
 
+    let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
+    let(:task_result) { Bosh::Director::TaskDBWriter.new(:result_output, task.id) }
+    let(:package_compile_step) { instance_double(DeploymentPlan::Steps::PackageCompileStep)}
+
     let(:planner_model) { instance_double(Bosh::Director::Models::Deployment) }
+    let(:assembler) { instance_double(DeploymentPlan::Assembler, bind_models: nil) }
 
     before do
       fake_locks
       allow(Digest::MultiDigest).to receive(:new).and_return(multi_digest)
       Bosh::Director::Config.current_job = job
       allow(Bosh::Director::Config).to receive(:dns_enabled?) { false }
-      Bosh::Director::Config.current_job.task_id = 'fake-task-id'
+      Bosh::Director::Config.current_job.task_id = task.id
       allow(job).to receive(:task_cancelled?) { false }
       blobstore = double(:blobstore)
       blobstores = instance_double(Bosh::Director::Blobstores, blobstore: blobstore)
       app = instance_double(App, blobstores: blobstores)
       allow(App).to receive(:instance).and_return(app)
       allow(multi_digest).to receive(:create).and_return('expected-sha1')
+      allow(Config).to receive(:result).and_return(task_result)
       allow(planner_model).to receive(:add_variable_set)
+
+      allow(DeploymentPlan::Assembler).to receive(:create).and_return(assembler)
     end
 
     subject(:job) { described_class.new(deployment_manifest['name'], release_name, manifest_release_version, 'ubuntu', '1', sha2) }
@@ -49,7 +57,6 @@ module Bosh::Director
     end
 
     context 'with a valid deployment targeted' do
-
       let(:cloud_config) { Bosh::Spec::Deployments.simple_cloud_config }
 
       let!(:deployment_model) do
@@ -123,13 +130,10 @@ module Bosh::Director
         end
 
         context 'and the requested stemcell is found' do
-          let(:package_compile_step) { instance_double(DeploymentPlan::Steps::PackageCompileStep)}
-
           before do
             create_stemcell
-            allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:new).and_return(package_compile_step)
+            allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:create).and_return(package_compile_step)
             allow(job).to receive(:create_tarball)
-            allow(job).to receive(:result_file).and_return(Tempfile.new('result'))
             allow(package_compile_step).to receive(:perform)
           end
 
@@ -143,11 +147,6 @@ module Bosh::Director
           end
 
           it 'succeeds' do
-            expect(DeploymentPlan::Steps::PackageCompileStep).to receive(:new) do |_, job, config, _, _|
-              expect(job.first).to be_instance_of(DeploymentPlan::InstanceGroup)
-              expect(job.first.release.name).to eq(release_name)
-              expect(config).to be_instance_of(DeploymentPlan::CompilationConfig)
-            end.and_return(package_compile_step)
             expect(package_compile_step).to receive(:perform).with no_args
 
             job.perform
@@ -181,10 +180,6 @@ module Bosh::Director
             end
 
             it 'succeeds' do
-              expect(DeploymentPlan::Steps::PackageCompileStep).to receive(:new) do |_, job, config, _, _|
-                expect(job.first).to be_instance_of(DeploymentPlan::InstanceGroup)
-                expect(config).to be_instance_of(DeploymentPlan::CompilationConfig)
-              end.and_return(package_compile_step)
               expect(package_compile_step).to receive(:perform).with no_args
 
               job.perform
@@ -219,12 +214,11 @@ module Bosh::Director
                 allow(planner).to receive(:model).and_return(Bosh::Director::Models::Deployment.make(name: 'foo'))
                 allow(planner).to receive(:release)
                 allow(planner).to receive(:add_instance_group)
-                allow(planner).to receive(:compile_packages)
                 allow(job).to receive(:create_job_with_all_the_templates_so_everything_compiles)
               }
 
               it 'skips links binding' do
-                expect(planner).to receive(:bind_models).with({:should_bind_links => false, :should_bind_properties=>false})
+                expect(assembler).to receive(:bind_models).with({:should_bind_links => false, :should_bind_properties=>false})
                 job.perform
               end
             end
@@ -240,8 +234,8 @@ module Bosh::Director
       context 'when creating a tarball' do
         let(:blobstore_client) { instance_double('Bosh::Blobstore::BaseClient') }
         let(:archiver) { instance_double('Bosh::Director::Core::TarGzipper') }
-        let(:package_compile_step) { instance_double(DeploymentPlan::Steps::PackageCompileStep)}
-        let(:planner) { instance_double(Bosh::Director::DeploymentPlan::Planner)}
+        let(:planner_factory) { DeploymentPlan::PlannerFactory.create(logger) }
+        let(:planner) { planner_factory.create_from_model(deployment_model) }
         let(:task_dir) { Dir.mktmpdir }
 
         before {
@@ -296,16 +290,13 @@ module Bosh::Director
               stemcell_version: '1'
           )
 
-          result_file = double('result file')
           allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore_client)
           allow(Bosh::Director::Core::TarGzipper).to receive(:new).and_return(archiver)
           allow(Config).to receive(:event_log).and_return(EventLog::Log.new)
-          allow(planner).to receive(:instance_groups) { ['fake-job'] }
-          allow(planner).to receive(:compilation) { 'fake-compilation-config' }
-          allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:new).and_return(package_compile_step)
+          allow(DeploymentPlan::PlannerFactory).to receive(:create).and_return(planner_factory)
+          allow(planner_factory).to receive(:create_from_model).and_return(planner)
+          allow(DeploymentPlan::Steps::PackageCompileStep).to receive(:create).and_return(package_compile_step)
           allow(package_compile_step).to receive(:perform).with no_args
-          allow(job).to receive(:result_file).and_return(result_file)
-          allow(result_file).to receive(:write)
         }
 
         it 'should order the files in the tarball' do
