@@ -17,6 +17,28 @@ module Bosh::Director
         status(201)
       end
 
+      post '/diff', :consumes => :yaml do
+        latest_runtime_config = Bosh::Director::Api::RuntimeConfigManager.new.latest
+        old_runtime_config = if latest_runtime_config.nil?
+          {}
+        else
+          latest_runtime_config.raw_manifest
+        end
+
+        new_runtime_config = validate_manifest_yml(request.body.read, nil)
+
+        result = {}
+        begin
+          diff = Changeset.new(old_runtime_config, new_runtime_config).diff().order
+          result['diff'] = diff.map { |l| [l.to_s, l.status] }
+        rescue => error
+          result['diff'] = []
+          result['error'] = "Unable to diff manifest: #{error.inspect}\n#{error.backtrace.join("\n")}"
+        end
+
+        json_encode(result)
+      end
+
       get '/', scope: :read do
         if params['limit'].nil? || params['limit'].empty?
           status(400)
