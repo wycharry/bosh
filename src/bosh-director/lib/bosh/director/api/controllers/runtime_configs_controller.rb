@@ -28,8 +28,9 @@ module Bosh::Director
         new_runtime_config = validate_manifest_yml(request.body.read, nil)
 
         result = {}
+        redact = params['redact'] != 'false'
         begin
-          diff = Changeset.new(old_runtime_config, new_runtime_config).diff().order
+          diff = Changeset.new(old_runtime_config, new_runtime_config).diff(redact).order
           result['diff'] = diff.map { |l| [l.to_s, l.status] }
         rescue => error
           result['diff'] = []

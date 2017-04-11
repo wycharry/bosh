@@ -104,6 +104,16 @@ module Bosh::Director
             end
           end
 
+          describe 'when redact=false' do
+            it 'shows property values in plain text' do
+              runtime_config['addons']['jobs']['properties']['new-key'] = 'new-value'
+              post '/diff?redact=false', YAML.dump(runtime_config), {'CONTENT_TYPE' => 'text/yaml'}
+
+              expect(last_response.status).to eq(200)
+              expect(last_response.body).to eq('{"diff":[["addons:",null],["  jobs:",null],["    properties:",null],["      new-key: new-value","added"]]}')
+            end
+          end
+
           describe 'when diffing against empty yaml' do
             it "shows a full 'removed' diff" do
               post '/diff', YAML.dump({}), {'CONTENT_TYPE' => 'text/yaml'}
