@@ -11,29 +11,27 @@ module Bosh::Director::ConfigServer
     end
 
     # @param [Hash] raw_hash Hash to be interpolated
-    # @param [String] deployment_name The deployment context in-which the interpolation
-    # will occur (used mostly for links properties interpolation since they will be interpolated in
-    # the context of the deployment providing these links)
-    # @param [VariableSet] variable_set The variable set to use with interpolation. If 'nil' it will
-    # use the default variable set from deployment.
+    # @param [VariableSet] variable_set The variable set to use with interpolation.
     # @param [Hash] options Additional options
     #   Options include:
     #   - 'subtrees_to_ignore': [Array] Array of paths that should not be interpolated in src
-    #   - 'must_be_absolute_name': [Boolean] Flag to check if all the placeholders start with '/'
+    #   - 'must_be_absolute_name': [Boolean] Flag to check if all the variables start with '/'
     # @return [Hash] A Deep copy of the interpolated src Hash
-    def interpolate(raw_hash, deployment_name, variable_set, options = {})
+    def interpolate(raw_hash, variable_set, options = {})
       return raw_hash if raw_hash.nil?
       raise "Unable to interpolate provided object. Expected a 'Hash', got '#{raw_hash.class}'" unless raw_hash.is_a?(Hash)
+
+      deployment_name = variable_set.deployment.name
 
       subtrees_to_ignore = options.fetch(:subtrees_to_ignore, [])
       must_be_absolute_name = options.fetch(:must_be_absolute_name, false)
 
-      placeholders_paths = @deep_hash_replacer.placeholders_paths(raw_hash, subtrees_to_ignore)
-      placeholders_list = placeholders_paths.flat_map { |c| c['placeholders'] }.uniq
+      variables_paths = @deep_hash_replacer.variables_path(raw_hash, subtrees_to_ignore)
+      variables_list = variables_paths.flat_map { |c| c['variables'] }.uniq
 
-      retrieved_config_server_values = fetch_values(placeholders_list, deployment_name, variable_set, must_be_absolute_name)
+      retrieved_config_server_values = fetch_values(variables_list, deployment_name, variable_set, must_be_absolute_name)
 
-      @deep_hash_replacer.replace_placeholders(raw_hash, placeholders_paths, retrieved_config_server_values)
+      @deep_hash_replacer.replace_variables(raw_hash, variables_paths, retrieved_config_server_values)
     end
 
     # @param [Hash] link_properties_hash Link spec properties to be interpolated
@@ -44,12 +42,12 @@ module Bosh::Director::ConfigServer
       return link_properties_hash if link_properties_hash.nil?
       raise "Unable to interpolate cross deployment link properties. Expected a 'Hash', got '#{link_properties_hash.class}'" unless link_properties_hash.is_a?(Hash)
 
-      placeholders_paths = @deep_hash_replacer.placeholders_paths(link_properties_hash)
-      placeholders_list = placeholders_paths.flat_map { |c| c['placeholders'] }.uniq
+      variables_paths = @deep_hash_replacer.variables_path(link_properties_hash)
+      variables_list = variables_paths.flat_map { |c| c['variables'] }.uniq
 
-      retrieved_config_server_values = resolve_cross_deployments_variables(placeholders_list, consumer_variable_set, provider_variable_set)
+      retrieved_config_server_values = resolve_cross_deployments_variables(variables_list, consumer_variable_set, provider_variable_set)
 
-      @deep_hash_replacer.replace_placeholders(link_properties_hash, placeholders_paths, retrieved_config_server_values)
+      @deep_hash_replacer.replace_variables(link_properties_hash, variables_paths, retrieved_config_server_values)
     end
 
     # Refer to unit tests for full understanding of this method
@@ -63,13 +61,13 @@ module Bosh::Director::ConfigServer
       if provided_prop.nil?
         result = default_prop
       else
-        if ConfigServerHelper.is_full_placeholder?(provided_prop)
+        if ConfigServerHelper.is_full_variable?(provided_prop)
           extracted_name = ConfigServerHelper.add_prefix_if_not_absolute(
-            ConfigServerHelper.extract_placeholder_name(provided_prop),
+            ConfigServerHelper.extract_variable_name(provided_prop),
             @director_name,
             deployment_name
           )
-          extracted_name = extracted_name.split('.').first
+          extracted_name = get_name_root(extracted_name)
 
           if name_exists?(extracted_name)
             result = provided_prop
@@ -131,10 +129,11 @@ module Bosh::Director::ConfigServer
 
       variables.each do |variable|
         name = ConfigServerHelper.add_prefix_if_not_absolute(
-          ConfigServerHelper.extract_placeholder_name(variable),
+          ConfigServerHelper.extract_variable_name(variable),
           @director_name,
           deployment_name
         )
+
         begin
           name_root = get_name_root(name)
 
@@ -143,7 +142,7 @@ module Bosh::Director::ConfigServer
           if saved_variable_mapping.nil?
             raise Bosh::Director::ConfigServerInconsistentVariableState, "Expected variable '#{name_root}' to be already versioned in deployment '#{deployment_name}'" unless variable_set.writable
 
-            fetched_variable_from_cfg_srv = get_variable_by_name(name)
+            fetched_variable_from_cfg_srv = get_variable_by_name(name_root)
 
             begin
               save_variable(name_root, variable_set, fetched_variable_from_cfg_srv)
@@ -177,13 +176,13 @@ module Bosh::Director::ConfigServer
 
       variables.each do |variable|
         raw_variable_name = ConfigServerHelper.add_prefix_if_not_absolute(
-          ConfigServerHelper.extract_placeholder_name(variable),
+          ConfigServerHelper.extract_variable_name(variable),
           @director_name,
           provider_deployment_name
         )
 
         variable_composed_name = get_name_root(raw_variable_name)
-        consumer_variable_model = consumer_variable_set.find_variable_by_name(variable_composed_name)
+        consumer_variable_model = consumer_variable_set.find_provided_variable_by_name(variable_composed_name, provider_deployment_name)
 
         begin
           if !consumer_variable_model.nil?
@@ -199,7 +198,7 @@ module Bosh::Director::ConfigServer
             variable_name = provider_variable_model.variable_name
 
             begin
-              consumer_variable_set.add_variable(variable_name: variable_name, variable_id: variable_id)
+              consumer_variable_set.add_variable(variable_name: variable_name, variable_id: variable_id, is_local: false, provider_deployment: provider_deployment_name)
             rescue Sequel::UniqueConstraintViolation
               @logger.debug("Variable '#{variable_name}' was already added to consumer variable set '#{consumer_variable_set.id}'")
             end
@@ -230,12 +229,12 @@ module Bosh::Director::ConfigServer
         begin
           response_data = JSON.parse(response.body)
         rescue JSON::ParserError
-          raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: Invalid JSON response"
+          raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' with id '#{id}' from config server: Invalid JSON response"
         end
       elsif response.kind_of? Net::HTTPNotFound
-        raise Bosh::Director::ConfigServerMissingName, "Failed to find variable '#{name_root}' from config server: HTTP code '404'"
+        raise Bosh::Director::ConfigServerMissingName, "Failed to find variable '#{name_root}' with id '#{id}' from config server: HTTP code '404'"
       else
-        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: HTTP code '#{response.code}'"
+        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' with id '#{id}' from config server: HTTP code '#{response.code}'"
       end
 
       extract_variable_value(name, response_data)
@@ -260,27 +259,25 @@ module Bosh::Director::ConfigServer
     end
 
     def get_variable_by_name(name)
-      name_root = get_name_root(name)
-
-      response = @config_server_http_client.get(name_root)
+      response = @config_server_http_client.get(name)
 
       if response.kind_of? Net::HTTPOK
         begin
           response_body = JSON.parse(response.body)
         rescue JSON::ParserError
-          raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: Invalid JSON response"
+          raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name}' from config server: Invalid JSON response"
         end
 
         response_data = response_body['data']
 
-        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: Expected data to be an array" unless response_data.is_a?(Array)
-        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: Expected data to be non empty array" if response_data.empty?
+        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name}' from config server: Expected data to be an array" unless response_data.is_a?(Array)
+        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name}' from config server: Expected data to be non empty array" if response_data.empty?
 
         response_data[0]
       elsif response.kind_of? Net::HTTPNotFound
-        raise Bosh::Director::ConfigServerMissingName, "Failed to find variable '#{name_root}' from config server: HTTP code '404'"
+        raise Bosh::Director::ConfigServerMissingName, "Failed to find variable '#{name}' from config server: HTTP code '404'"
       else
-        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name_root}' from config server: HTTP code '#{response.code}'"
+        raise Bosh::Director::ConfigServerFetchError, "Failed to fetch variable '#{name}' from config server: HTTP code '#{response.code}'"
       end
     end
 
@@ -383,7 +380,7 @@ module Bosh::Director::ConfigServer
   end
 
   class DisabledClient
-    def interpolate(src, deployment_name, variable_set, options={})
+    def interpolate(src, variable_set, options={})
       Bosh::Common::DeepCopy.copy(src)
     end
 

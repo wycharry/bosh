@@ -83,6 +83,7 @@ module Bosh::Director
   ValidationViolatedMin = err(40002)
   ValidationViolatedMax = err(40003)
   ValidationExtraField = err(40004)
+  ValidationInvalidValue = err(40005)
 
   StemcellInvalidArchive = err(50000)
   StemcellImageNotFound = err(50001)
@@ -302,7 +303,7 @@ module Bosh::Director
   ConfigServerIncorrectNameSyntax = err(540004)
   ConfigServerGenerationError = err(540005)
   ConfigServerDeploymentNameMissing = err(540006)
-  ConfigServerIncorrectPlaceholderPlacement = err(540007)
+  ConfigServerIncorrectVariablePlacement = err(540007)
   ConfigServerInconsistentVariableState = err(540008)
 
   # CPI config
