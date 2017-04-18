@@ -95,6 +95,35 @@ module Bosh::Director::DeploymentPlan
             expect(ip_to_netaddr(desired_plans.first.reservation.ip)).to eq('192.168.1.4')
           end
         end
+
+        context 'when the network name changes' do
+          let(:network2) { ManualNetwork.new('my-network-2', subnets, logger) }
+
+          let(:existing_network_reservation1) { BD::DesiredNetworkReservation.new_static(instance_model, network2, '192.168.1.2') }
+          let(:existing_network_reservation2) { BD::DesiredNetworkReservation.new_static(instance_model, network2, '192.168.1.3') }
+          let(:desired_reservations) {
+            [
+              existing_network_reservation1,
+              existing_network_reservation2,
+            ]
+          }
+
+          before do
+            existing_reservations[0].resolve_type(:static)
+            existing_reservations[1].resolve_type(:static)
+          end
+
+          it 'should keep existing reservations' do
+            network_plans = network_planner.reconcile(existing_reservations)
+            obsolete_plans = network_plans.select(&:obsolete?)
+            existing_plans = network_plans.select(&:existing?)
+            desired_plans = network_plans.reject(&:existing?).reject(&:obsolete?)
+
+            expect(obsolete_plans.count).to eq(0)
+            expect(existing_plans.count).to eq(2)
+            expect(desired_plans.count).to eq(0)
+          end
+        end
       end
 
       context 'when existing reservation availability zones do not match job availability zones' do

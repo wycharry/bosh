@@ -163,6 +163,62 @@ describe 'network configuration', type: :integration do
       deploy_simple_manifest(manifest_hash: manifest_hash)
       expect(director.instances.map(&:agent_id)).to eq([agent_id])
     end
+
+    context 'https://www.pivotaltracker.com/story/show/143678731' do
+      it 'works with no changes' do
+        cloud_config_hash = Bosh::Spec::Deployments.simple_cloud_config
+        manifest_hash = Bosh::Spec::Deployments.simple_manifest
+        deploy_from_scratch(cloud_config_hash: cloud_config_hash, manifest_hash: manifest_hash)
+
+        before_agent_id = director.instances.first.agent_id
+
+        deploy_simple_manifest(manifest_hash: manifest_hash)
+
+        after_agent_id = director.instances.first.agent_id
+
+        expect(after_agent_id).to eq(before_agent_id)
+      end
+
+      it 'does not recreate VMs when switching between networks with the exact same configuration' do
+        cloud_config_hash = Bosh::Spec::Deployments.simple_cloud_config
+        manifest_hash = Bosh::Spec::Deployments.simple_manifest
+        deploy_from_scratch(cloud_config_hash: cloud_config_hash, manifest_hash: manifest_hash)
+
+        before_agent_id = director.instances.first.agent_id
+        before_ips = director.instances.first.ips
+
+        cloud_config_hash['networks'] << cloud_config_hash['networks'][0].merge({'name' => 'b'})
+        upload_cloud_config(cloud_config_hash: cloud_config_hash)
+
+        manifest_hash['jobs'].first['networks'] = [{'name' => 'b'}]
+        deploy_simple_manifest(manifest_hash: manifest_hash)
+
+        after_agent_id = director.instances.first.agent_id
+        after_ips = director.instances.first.ips
+
+        # expect(after_agent_id).to eq(before_agent_id)
+        expect(after_ips).to eq(before_ips)
+      end
+
+      it 'does not recreate VMs when renaming a network' do
+        cloud_config_hash = Bosh::Spec::Deployments.simple_cloud_config
+        manifest_hash = Bosh::Spec::Deployments.simple_manifest
+        deploy_from_scratch(cloud_config_hash: cloud_config_hash, manifest_hash: manifest_hash)
+
+        before_agent_id = director.instances.first.agent_id
+
+        cloud_config_hash['networks'][0]['name'] = 'b'
+        cloud_config_hash['compilation']['network'] = 'b'
+        upload_cloud_config(cloud_config_hash: cloud_config_hash)
+
+        manifest_hash['jobs'].first['networks'] = [{'name' => 'b'}]
+        deploy_simple_manifest(manifest_hash: manifest_hash)
+
+        after_agent_id = director.instances.first.agent_id
+
+        expect(after_agent_id).to eq(before_agent_id)
+      end
+    end
   end
 
   context 'when dns is disabled' do

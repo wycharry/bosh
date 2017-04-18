@@ -22,7 +22,15 @@ module Bosh::Director::DeploymentPlan
           end
 
           desired_reservation = desired_reservations.find do |reservation|
-              reservation.network == existing_reservation.network &&
+            same = both_are_same_network(reservation.network, existing_reservation.network)
+
+            puts "=======> existing: #{existing_reservation.pretty_inspect}"
+            puts "=======> desired: #{reservation.pretty_inspect}"
+            puts "=======> sameness: #{same}"
+            puts "=======> dynamicness: #{reservation.dynamic?}"
+            puts "=======> ipequalness: #{reservation.ip == existing_reservation.ip}"
+
+            both_are_same_network(existing_reservation.network, reservation.network) &&
                 (reservation.dynamic? || reservation.ip == existing_reservation.ip)
           end
 
@@ -52,6 +60,13 @@ module Bosh::Director::DeploymentPlan
       end
 
       private
+
+      def both_are_same_network(existing_network, desired_network)
+        return true if existing_network == desired_network
+        return false unless existing_network.manual?
+        return false if existing_network.manual? ^ desired_network.manual?
+        existing_network.subnets == desired_network.subnets
+      end
 
       def both_are_dynamic_reservations(existing_reservation, reservation)
         existing_reservation.type == reservation.type &&

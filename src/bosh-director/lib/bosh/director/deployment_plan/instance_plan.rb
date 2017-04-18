@@ -227,7 +227,7 @@ module Bosh
             stemcell_changed? ||
             env_changed? ||
             needs_recreate? ||
-            networks_changed?
+            network_addressing_changed?
         end
 
         def find_existing_reservation_for_network(network)
@@ -294,6 +294,15 @@ module Bosh
         def network_settings_changed?(old_network_settings, new_network_settings)
           return false if old_network_settings == {}
           remove_dns_record_name_from_network_settings(old_network_settings) != new_network_settings
+        end
+
+        def network_addressing_changed?
+          old_network_settings = new? ? {} : @existing_instance.spec_p('networks')
+          new_network_settings = network_settings.to_hash
+
+          return false if old_network_settings == {}
+
+          remove_dns_record_name_from_network_settings(old_network_settings).values != new_network_settings.values
         end
 
         def remove_dns_record_name_from_network_settings(network_settings)
