@@ -14,6 +14,9 @@ export BOSH_CLIENT="admin"
 export BOSH_CLIENT_SECRET="$(bosh-cli int director-state/director-creds.yml --path=/admin_password)"
 export BOSH_CA_CERT="$(bosh-cli int director-state/director-creds.yml --path=/director_ssl/ca)"
 
+export BOSH_GW_HOST=$(fromEnvironment '.DirectorEIP')
+export BOSH_GW_USER="vcap"
+
 export BAT_DNS_HOST=$(fromEnvironment '.DirectorEIP')
 export BAT_PRIVATE_KEY="$(bosh-cli int director-state/director.yml --path=/cloud_provider/ssh_tunnel/private_key)"
 
